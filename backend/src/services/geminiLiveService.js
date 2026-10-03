@@ -2,10 +2,11 @@ const WebSocket = require('ws');
 const pool = require('../db');
 const { decrypt } = require('../util/crypto');
 const { alawToPcm, pcmToAlaw, resamplePcm } = require('./audioCodec');
+const { getVertexAccessToken, loadServiceAccount } = require('./vertexAiService');
 
 /**
  * Gemini Live Bidirectional Voice Bridge:
- * Connects to Google's Gemini Live API via WebSocket and streams
+ * Connects to Google's Gemini Live / Vertex AI API via WebSocket and streams
  * audio between VoiceLink G.711 A-law 8kHz and Gemini Live PCM (16kHz in, 24kHz out).
  */
 
@@ -45,19 +46,41 @@ class GeminiLiveSession {
   }
 
   async start() {
-    const apiKey = await getGeminiApiKey();
-    if (!apiKey) {
-      throw new Error('No GEMINI_API_KEY found. Please set GEMINI_API_KEY in .env or Settings -> AI Models.');
+    const sa = loadServiceAccount();
+    let wsUrl = '';
+    let wsOptions = {};
+
+    if (sa) {
+      try {
+        const token = await getVertexAccessToken();
+        const projectId = process.env.GOOGLE_CLOUD_PROJECT || sa.project_id || 'project-c0b5ea74-5ba2-4e68-8ab';
+        const location = process.env.GOOGLE_CLOUD_LOCATION || 'us-central1';
+        wsUrl = `wss://${location}-aiplatform.googleapis.com/ws/google.cloud.aiplatform.v1beta1.LlmBidiService/BidiGenerateContent`;
+        wsOptions = {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        };
+        console.log(`[gemini-live] Using Vertex AI Google Cloud authenticated session (${projectId})`);
+      } catch (e) {
+        console.warn('[gemini-live] Vertex AI token generation fallback to API key:', e.message);
+      }
     }
 
-    const modelName = this.agent.gemini_model || process.env.GEMINI_LIVE_MODEL || 'gemini-3.1-flash-live-preview';
+    if (!wsUrl) {
+      const apiKey = await getGeminiApiKey();
+      if (!apiKey) {
+        throw new Error('No Gemini API key or GCP Service Account found. Please check gcp-service-account.json or GEMINI_API_KEY.');
+      }
+      wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${apiKey}`;
+    }
+
+    const modelName = this.agent.gemini_model || process.env.GEMINI_LIVE_MODEL || 'gemini-2.5-flash';
     const voiceName = this.agent.voice_name || 'Aoede';
     const systemPrompt = this.agent.system_prompt || 
-      'You are a friendly, concise AI phone agent for ForgeGrowth CRM. Speak in natural conversational tones without markdown or bullet points.';
+      'You are a friendly, concise AI phone agent for Connects AI CRM. Speak in natural conversational tones without markdown or bullet points.';
 
-    const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${apiKey}`;
-
-    this.ws = new WebSocket(wsUrl);
+    this.ws = new WebSocket(wsUrl, wsOptions);
 
     this.ws.on('open', () => {
       console.log(`[gemini-live] connected for call ${this.callId}`);

@@ -23,10 +23,13 @@
 
 const anthropic = require('./anthropic');
 const openai = require('./openai');
+const gemini = require('./gemini');
 
 const PROVIDERS = {
   anthropic,
   openai,
+  gemini,
+  vertex: gemini,
 };
 
 function getProvider(name) {
