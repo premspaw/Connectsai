@@ -73,30 +73,43 @@ export default function LoginGate({ onLogin }) {
 
         <div style={{ position: 'relative', zIndex: 1, maxWidth: 480 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 40 }}>
-            <img
-              src="/forgemind-logo.gif"
-              alt="ForgeMind Logo"
-              style={{ height: 56, width: 56, objectFit: 'contain', flexShrink: 0 }}
-              onError={e => { e.currentTarget.style.display = 'none'; }}
-            />
+            <div style={{
+              width: 52,
+              height: 52,
+              borderRadius: 14,
+              background: 'linear-gradient(135deg, #0284c7 0%, #6366f1 50%, #8b5cf6 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 18px rgba(2, 132, 199, 0.4)',
+              flexShrink: 0,
+            }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="18" cy="5" r="3" />
+                <circle cx="6" cy="12" r="3" />
+                <circle cx="18" cy="19" r="3" />
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+              </svg>
+            </div>
             <div style={{ lineHeight: 1.15 }}>
               <div style={{
-                fontSize: 30,
+                fontSize: 32,
                 fontWeight: 800,
                 letterSpacing: '-0.02em',
                 color: C.headerText,
               }}>
-                Forge<span style={{ color: C.primary }}>Growth</span>
+                Connects<span style={{ color: C.primary }}>.ai</span>
               </div>
               <div style={{
                 fontSize: 13,
                 fontWeight: 700,
                 color: C.headerMuted,
-                letterSpacing: '0.1em',
+                letterSpacing: '0.08em',
                 textTransform: 'uppercase',
                 marginTop: 4,
               }}>
-                powered by FMOS
+                AI WhatsApp Growth CRM
               </div>
             </div>
           </div>
@@ -318,6 +331,71 @@ export default function LoginGate({ onLogin }) {
             >
               <LogIn size={16} />
               {loading ? 'Signing in…' : 'Sign in'}
+            </button>
+
+            <div style={{
+              margin: '20px 0 16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              color: C.textMuted,
+              fontSize: 12,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em'
+            }}>
+              <div style={{ flex: 1, height: 1, background: C.border }} />
+              <span>or explore</span>
+              <div style={{ flex: 1, height: 1, background: C.border }} />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => onLogin({
+                id: 1,
+                username: 'admin',
+                email: 'admin@example.com',
+                displayName: 'Admin User',
+                role: 'admin',
+                isActive: true,
+                permissions: null,
+                pages: [
+                  'home', 'chatbot-builder', 'template-builder', 'chats',
+                  'bulk-message', 'admin-settings', 'media-library', 'wa-links',
+                  'pipelines', 'ai-agent-builder', 'lead-forms', 'projects',
+                  'mkt-overview', 'campaigns', 'ctwa-ads', 'conversion-api',
+                  'sales-pipeline', 'leads', 'payments', 'onboarding',
+                  'sales-funnel', 'message-costs'
+                ],
+                assignedWaNumbers: [],
+              })}
+              style={{
+                width: '100%',
+                padding: '11px',
+                borderRadius: 10,
+                border: `1.5px solid ${C.border}`,
+                background: C.cardBg,
+                color: C.text,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                fontFamily: FONT,
+                transition: 'all .15s',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = C.purple;
+                e.currentTarget.style.color = C.purple;
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = C.border;
+                e.currentTarget.style.color = C.text;
+              }}
+            >
+              <Shield size={16} />
+              Bypass Sign In (Explore Demo Mode)
             </button>
           </form>
         </div>

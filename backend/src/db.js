@@ -1,7 +1,7 @@
 const { Pool } = require('pg');
 
 function buildPool() {
-  const connectionString = process.env.SUPABASE_DATABASE_URL;
+  const connectionString = process.env.DATABASE_URL || process.env.SUPABASE_DATABASE_URL;
   if (connectionString) {
     return new Pool({
       connectionString,

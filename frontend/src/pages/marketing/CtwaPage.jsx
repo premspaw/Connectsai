@@ -157,16 +157,16 @@ export default function CtwaPage({ navigate }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 14, marginBottom: 16 }}>
         <Card title="Clicks over time">
           {!data ? <Shimmer height={150} /> :
-            data.timeseries.length ? <LineTrend data={data.timeseries} valueKey="clicks" labelKey="day" /> : <EmptyChart />}
+            data.timeseries?.length ? <LineTrend data={data.timeseries} valueKey="clicks" labelKey="day" /> : <EmptyChart />}
         </Card>
         <Card title="Where the clicks came from">
-          {!data ? <Shimmer height={168} /> : data.platforms.length ? (
+          {!data ? <Shimmer height={168} /> : data.platforms?.length ? (
             <>
               {/* Donut carries its own legend (placement + clicks) — the strip
                   below adds what the legend can't: what those clicks became. */}
-              <Donut data={data.platforms.map(p => ({ label: p.platform, value: p.clicks, color: PLATFORM_COLOR[p.platform] || PLATFORM_COLOR.Other }))} />
+              <Donut data={(data.platforms || []).map(p => ({ label: p.platform, value: p.clicks, color: PLATFORM_COLOR[p.platform] || PLATFORM_COLOR.Other }))} />
               <div style={{ marginTop: 14, borderTop: `1px solid ${C.border}`, paddingTop: 10 }}>
-                {data.platforms.map(p => (
+                {(data.platforms || []).map(p => (
                   <div key={p.platform} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', fontFamily: FONT, fontSize: 14 }}>
                     <span style={{ width: 9, height: 9, borderRadius: 3, background: PLATFORM_COLOR[p.platform] || PLATFORM_COLOR.Other, flexShrink: 0 }} />
                     <span style={{ flex: 1, color: C.textSecondary }}>{p.platform}</span>
@@ -179,7 +179,7 @@ export default function CtwaPage({ navigate }) {
           ) : <EmptyChart />}
         </Card>
         <Card title="Where those leads are now">
-          {!data ? <Shimmer height={150} /> : data.stages.length ? (
+          {!data ? <Shimmer height={150} /> : data.stages?.length ? (
             <div>
               {data.stages.map(s => {
                 const total = data.stages.reduce((a, b) => a + b.count, 0) || 1;

@@ -95,7 +95,8 @@ export default function TagMultiSelect({ categories = [], tags = [], selectedIds
       {open && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 4px)', left: 0,
-          minWidth: Math.max(minWidth, 220), background: 'var(--c-cardBg)',
+          minWidth: typeof minWidth === 'number' ? Math.max(minWidth, 220) : (typeof minWidth === 'string' && minWidth.includes('%') ? '100%' : 220),
+          background: 'var(--c-cardBg)',
           border: `1px solid ${C.border}`, borderRadius: 10, boxShadow: C.shadowLg,
           zIndex: 60, maxHeight: 320, overflowY: 'auto', padding: 6, fontFamily: FONT,
         }}>

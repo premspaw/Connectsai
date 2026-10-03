@@ -466,7 +466,7 @@ function ButtonsSection({ buttons, onAdd, onRemove, onUpdate, category, errors }
           <div style={{ position: 'relative' }}>
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              style={{ padding: '7px 14px', background: 'var(--c-cardBg)', border: '1.5px solid var(--c-borderStrong, #D5D5D0)', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: FONT, color: 'var(--c-t3, #444)', transition: 'all .15s', display: 'flex', alignItems: 'center', gap: 5 }}
+              style={{ padding: '7px 14px', background: 'var(--c-cardBg)', borderWidth: 1.5, borderStyle: 'solid', borderColor: 'var(--c-borderStrong, #D5D5D0)', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: FONT, color: 'var(--c-t3, #444)', transition: 'all .15s', display: 'flex', alignItems: 'center', gap: 5 }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = B.accent; e.currentTarget.style.color = B.accent; e.currentTarget.style.background = B.accentBg; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--c-borderStrong)'; e.currentTarget.style.color = 'var(--c-t3)'; e.currentTarget.style.background = 'var(--c-cardBg)'; }}
             >+ Add Button</button>
@@ -1162,7 +1162,7 @@ function CarouselCardsEditor({ cards, onChange, readOnly, accountId, errors = {}
   );
 }
 
-const iconBtnSmall = { width: 26, height: 26, border: '1px solid var(--c-borderStrong, #D5D5D0)', borderRadius: 6, background: 'var(--c-cardBg)', cursor: 'pointer', fontSize: 15, color: 'var(--c-t4, #666)', display: 'flex', alignItems: 'center', justifyContent: 'center' };
+const iconBtnSmall = { width: 26, height: 26, borderWidth: 1, borderStyle: 'solid', borderColor: 'var(--c-borderStrong, #D5D5D0)', borderRadius: 6, background: 'var(--c-cardBg)', cursor: 'pointer', fontSize: 15, color: 'var(--c-t4, #666)', display: 'flex', alignItems: 'center', justifyContent: 'center' };
 
 // ─── Analytics Drawer ─────────────────────────────────────────────────────────
 function AnalyticsDrawer({ templateId, templateName, onClose }) {
@@ -1769,16 +1769,16 @@ function BuilderView({ template, initialDraft, onBack, onSave, readOnly, account
   ].filter(([,,, show]) => show !== false);
 
   // Input styles
-  const inpStyle = { border: '1.5px solid var(--c-borderStrong, #D5D5D0)', borderRadius: 10, padding: '9px 14px', fontSize: 15, fontFamily: FONT, width: '100%', background: 'var(--c-cardBg)', color: 'var(--c-text)', outline: 'none', transition: 'border .15s' };
+  const inpStyle = { borderWidth: 1.5, borderStyle: 'solid', borderColor: 'var(--c-borderStrong, #D5D5D0)', borderRadius: 10, padding: '9px 14px', fontSize: 15, fontFamily: FONT, width: '100%', background: 'var(--c-cardBg)', color: 'var(--c-text)', outline: 'none', transition: 'border-color .15s' };
   const inpErrStyle = { ...inpStyle, borderColor: B.red };
   const selStyle = { ...inpStyle, cursor: 'pointer', appearance: 'none' };
   const taStyle = { ...inpStyle, resize: 'vertical', lineHeight: 1.65 };
   const taErrStyle = { ...taStyle, borderColor: B.red };
   const btnPriStyle = { padding: '10px 22px', background: B.accent, color: '#fff', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: FONT, transition: 'all .15s', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' };
-  const btnGhostStyle = { padding: '7px 14px', background: 'var(--c-cardBg)', border: '1.5px solid var(--c-borderStrong, #D5D5D0)', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: FONT, color: 'var(--c-t3, #444)', transition: 'all .15s', display: 'flex', alignItems: 'center', gap: 5 };
-  const hdrTabStyle = { padding: '7px 14px', borderRadius: 99, fontSize: 14, fontWeight: 600, cursor: 'pointer', border: '1.5px solid var(--c-borderStrong, #D5D5D0)', background: 'var(--c-cardBg)', color: 'var(--c-t3, #444)', transition: 'all .15s', display: 'flex', alignItems: 'center', gap: 5, fontFamily: FONT };
+  const btnGhostStyle = { padding: '7px 14px', background: 'var(--c-cardBg)', borderWidth: 1.5, borderStyle: 'solid', borderColor: 'var(--c-borderStrong, #D5D5D0)', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: FONT, color: 'var(--c-t3, #444)', transition: 'all .15s', display: 'flex', alignItems: 'center', gap: 5 };
+  const hdrTabStyle = { padding: '7px 14px', borderRadius: 99, fontSize: 14, fontWeight: 600, cursor: 'pointer', borderWidth: 1.5, borderStyle: 'solid', borderColor: 'var(--c-borderStrong, #D5D5D0)', background: 'var(--c-cardBg)', color: 'var(--c-t3, #444)', transition: 'all .15s', display: 'flex', alignItems: 'center', gap: 5, fontFamily: FONT };
   const hdrTabOnStyle = { ...hdrTabStyle, background: 'var(--c-text)', color: 'var(--c-cardBg)', borderColor: 'var(--c-text)' };
-  const catCardStyle = { border: '2px solid var(--c-border)', borderRadius: 12, padding: '14px 16px', cursor: 'pointer', background: 'var(--c-cardBg)', transition: 'all .18s', textAlign: 'left', width: '100%', fontFamily: FONT };
+  const catCardStyle = { borderWidth: 2, borderStyle: 'solid', borderColor: 'var(--c-border)', borderRadius: 12, padding: '14px 16px', cursor: 'pointer', background: 'var(--c-cardBg)', transition: 'all .18s', textAlign: 'left', width: '100%', fontFamily: FONT };
   const catCardOnStyle = { ...catCardStyle, borderColor: B.accent, background: B.accentBg };
 
   // Full-height flex column: one compact header bar that never scrolls, then a

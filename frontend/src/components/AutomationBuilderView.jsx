@@ -3563,9 +3563,9 @@ const PhonePreview = ({ onClose, nodes = [], edges = [], templates = [], otherAu
               <div style={{ background:"#075E54", paddingTop:50, paddingBottom:8, paddingLeft:12, paddingRight:12, color:"#fff", fontFamily:"-apple-system, 'SF Pro Display', system-ui, sans-serif", flexShrink:0, position:"relative", zIndex:1 }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                   <span style={{ color:"#fff", fontSize:22, lineHeight:1, opacity:.9, marginRight:-2 }}>‹</span>
-                  <div style={{ width:30, height:30, borderRadius:"50%", background:`linear-gradient(135deg,${C.brandBright},${C.brand})`, display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontSize:14, fontWeight:700, flexShrink:0 }}>F</div>
+                  <div style={{ width:30, height:30, borderRadius:"50%", background:`linear-gradient(135deg,${C.brandBright},${C.brand})`, display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontSize:14, fontWeight:700, flexShrink:0 }}>Z</div>
                   <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:15, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Forge Automation</div>
+                    <div style={{ fontSize:15, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Zylo AI Bot</div>
                     <div style={{ fontSize:12, opacity:.82, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{ended ? "Conversation ended" : waiting ? "Waiting for your reply" : "typing…"}</div>
                   </div>
                   <svg width="20" height="14" viewBox="0 0 20 14" style={{ display:"block", flexShrink:0 }}>

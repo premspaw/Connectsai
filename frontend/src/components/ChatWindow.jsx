@@ -246,15 +246,21 @@ export default function ChatWindow({ waNumber, contactNumber, onContactSaved }) 
   // Drop optimistic messages once they appear in the real polled list
   useEffect(() => {
     if (!data?.messages || optimisticMessages.length === 0) return;
+    const norm = (s) => String(s || '').replace(/\D/g, '');
+    const targetContact = norm(contactNumber);
     const realBodies = new Set(
       data.messages
         .filter(m => m.direction === 'outgoing' && m.message_body)
-        .map(m => `${m.message_body}|${(m.contact_number || '').replace(/\D/g, '')}`)
+        .map(m => {
+          const cNum = norm(m.contact_number) || targetContact;
+          return `${m.message_body.trim()}|${cNum}`;
+        })
     );
-    setOptimisticMessages(prev => prev.filter(o =>
-      !realBodies.has(`${o.message_body}|${(o.contact_number || '').replace(/\D/g, '')}`)
-    ));
-  }, [data]);
+    setOptimisticMessages(prev => prev.filter(o => {
+      const oNum = norm(o.contact_number) || targetContact;
+      return !realBodies.has(`${(o.message_body || '').trim()}|${oNum}`);
+    }));
+  }, [data, contactNumber]);
 
   // Media composer state
   const [pendingFile, setPendingFile] = useState(null);
@@ -487,6 +493,7 @@ export default function ChatWindow({ waNumber, contactNumber, onContactSaved }) 
     setReplyTo(null);
     try {
       await api.sendMessage({ fromNumber: waNumber, toNumber: contactNumber, text, contextMessageId: ctxId });
+      refetch();
     } catch (err) {
       setSendError(err.message || 'Send failed');
       setOptimisticMessages(prev => prev.map(o =>

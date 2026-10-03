@@ -1,7 +1,12 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const path = require('node:path');
+const { pathToFileURL } = require('node:url');
 const { validateFlow, expectedHandles } = require('../src/services/flowValidator');
+
+const nodeLayoutUrl = pathToFileURL(
+  path.resolve(__dirname, '../../frontend/src/components/builder/nodeLayout.js')
+).href;
 
 /**
  * ONE fixture, checked by BOTH sides.
@@ -45,9 +50,7 @@ const FIXTURE = [
 ];
 
 test('backend and frontend agree on every node shape', async () => {
-  const mod = await import(
-    path.resolve(__dirname, '../../frontend/src/components/builder/nodeLayout.js')
-  );
+  const mod = await import(nodeLayoutUrl);
   let checked = 0;
   for (const { name, node } of FIXTURE) {
     const back = expectedHandles(node);
@@ -88,9 +91,7 @@ test('a URL button gets no handle, a quick reply keeps its ORIGINAL index', () =
  * it that way.
  */
 test('every tappable option resolves to a handle the canvas can wire', async () => {
-  const mod = await import(
-    path.resolve(__dirname, '../../frontend/src/components/builder/nodeLayout.js')
-  );
+  const mod = await import(nodeLayoutUrl);
   let tappable = 0;
   for (const { name, node } of FIXTURE) {
     const wired = new Set(mod.outputHandlesOf(node));
@@ -105,9 +106,7 @@ test('every tappable option resolves to a handle the canvas can wire', async () 
 });
 
 test('a list offers one DISTINCT tap target per row, addressed per row', async () => {
-  const mod = await import(
-    path.resolve(__dirname, '../../frontend/src/components/builder/nodeLayout.js')
-  );
+  const mod = await import(nodeLayoutUrl);
   // One section, three rows: the shape that could not branch at all.
   const one = FIXTURE.find(f => f.name === 'direct list, one section with three rows').node;
   assert.deepStrictEqual(

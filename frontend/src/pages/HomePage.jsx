@@ -444,7 +444,7 @@ export default function HomePage({ user, onPageChange }) {
 
           {/* KPI scorecard */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 16 }}>
-            {data.kpis.map(t => <KpiCard key={t.key} tile={t} onSelect={setDetailTile} />)}
+            {(Array.isArray(data?.kpis) ? data.kpis : []).map(t => <KpiCard key={t.key} tile={t} onSelect={setDetailTile} />)}
           </div>
 
           {/* Funnel + Tag distribution */}
@@ -502,11 +502,11 @@ export default function HomePage({ user, onPageChange }) {
                   <SectionTitle icon={Megaphone} right={
                     <button onClick={() => go('bulk-message')} style={{ border: 'none', background: 'none', color: C.primary, cursor: 'pointer', fontSize: 14, fontWeight: 600, fontFamily: FONT }}>View all →</button>
                   }>Recent broadcasts</SectionTitle>
-                  {data.broadcasts.recent.length === 0 ? (
+                  {(data.broadcasts.recent || []).length === 0 ? (
                     <div style={{ fontSize: 14, color: C.textMuted, fontFamily: FONT, padding: '14px 0' }}>No broadcasts yet.</div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-                      {data.broadcasts.recent.map(b => (
+                      {(data.broadcasts.recent || []).map(b => (
                         <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, fontFamily: FONT }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontWeight: 600, color: C.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.name || `Broadcast #${b.id}`}</div>

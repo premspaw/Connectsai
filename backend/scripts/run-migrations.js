@@ -54,9 +54,10 @@ function clientConfig() {
   // Deliberately mirrors backend/src/db.js, including its POSTGRES_* / DB_*
   // dual-prefix rule. Diverging here would produce a container that migrates
   // one database and then serves another.
-  if (process.env.SUPABASE_DATABASE_URL) {
+  const connectionString = process.env.DATABASE_URL || process.env.SUPABASE_DATABASE_URL;
+  if (connectionString) {
     return {
-      connectionString: process.env.SUPABASE_DATABASE_URL,
+      connectionString,
       ssl: process.env.POSTGRES_SSL === 'true' ? { rejectUnauthorized: false } : false,
     };
   }

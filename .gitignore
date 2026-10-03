@@ -82,3 +82,5 @@ ForgeCRM_LLD.html
 
 # Local stack state
 .env
+ngrok.cmd
+ngrok.ps1

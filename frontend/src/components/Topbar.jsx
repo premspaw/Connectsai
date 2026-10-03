@@ -90,34 +90,50 @@ export default function Topbar({ user, onLogout, onNavigate, section, onSectionC
           textAlign: 'left',
         }}
       >
-        <img
-          src={logoUrl}
-          alt="ForgeMind"
-          style={{ height: 36, width: 36, objectFit: 'contain', flexShrink: 0 }}
-          onError={e => { e.currentTarget.style.display = 'none'; }}
-        />
+        <div style={{
+          width: 32,
+          height: 32,
+          borderRadius: 9,
+          background: 'linear-gradient(135deg, #0284c7 0%, #6366f1 50%, #8b5cf6 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 2px 10px rgba(2, 132, 199, 0.35)',
+          flexShrink: 0,
+        }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="18" cy="5" r="3" />
+            <circle cx="6" cy="12" r="3" />
+            <circle cx="18" cy="19" r="3" />
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+          </svg>
+        </div>
         <div style={{ lineHeight: 1.1 }}>
           <div style={{
             fontSize: 18,
-            fontWeight: 900,
+            fontWeight: 800,
             color: C.headerText,
             fontFamily: FONT,
-            letterSpacing: '-0.01em',
+            letterSpacing: '-0.02em',
             textTransform: 'uppercase',
             lineHeight: 1,
             display: 'inline-flex',
             alignItems: 'center',
             gap: 6,
           }}>
-            FORGE
+            CONNECTS
             <span style={{
-              background: C.primary,
+              background: 'linear-gradient(135deg, #0284c7 0%, #6366f1 100%)',
               color: '#fff',
-              padding: '2px 7px',
-              borderRadius: 6,
+              fontSize: 11,
+              fontWeight: 800,
+              padding: '2px 6px',
+              borderRadius: 5,
               lineHeight: 1.2,
+              letterSpacing: '0.04em',
               display: 'inline-block',
-            }}>GROWTH</span>
+            }}>AI</span>
           </div>
         </div>
       </button>

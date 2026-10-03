@@ -65,6 +65,9 @@ const messageFormats = require('./services/messageFormats');
 const { router: entityFieldsRouter, ensureEntityFieldTables } = require('./routes/entityFields');
 // Per-template message costs — what Meta actually charged.
 const { router: messageCostsRouter, ensureCostTables } = require('./routes/messageCosts');
+// VoiceLink AI Phone Calling & Gemini Live Voice Agents
+const { router: voiceCallsRouter, publicRouter: voiceCallsPublicRouter, ensureVoiceTables } = require('./routes/voiceCalls');
+const { initVoiceWebsocketServer } = require('./routes/voiceWebsocket');
 const { startWorker: startMediaWorker, shutdown: shutdownMediaQueue } = require('./queue/mediaQueue');
 const { startSendWorker, shutdownSendQueue } = require('./queue/sendQueue');
 const { startAgentWorker, shutdownAgentQueue } = require('./queue/agentQueue');
@@ -193,6 +196,8 @@ app.use('/api/mcp/v1', mcpApiRouter);
 // the client has no session, and discovery must answer before any auth exists.
 // Mounted at the ROOT because RFC 8414/9728 anchor /.well-known at the origin.
 app.use('/', mcpOAuthPublicRouter);
+// Public VoiceLink webhook receiver
+app.use('/api', voiceCallsPublicRouter);
 // Remote (Streamable HTTP) MCP connector.
 //   /api/mcp            → OAuth bearer token (what Claude's connector uses)
 //   /api/mcp/http/<key> → legacy key-in-URL, kept so existing installs survive
@@ -241,6 +246,7 @@ app.use('/api', authMiddleware, messageCostsRouter);
 app.use('/api', authMiddleware, integrationsRouter);
 app.use('/api', authMiddleware, agentsRouter);
 app.use('/api', authMiddleware, agentConversationRouter);
+app.use('/api', authMiddleware, voiceCallsRouter);
 app.use('/api', authMiddleware, mcpAdminRouter);
 app.use('/api', authMiddleware, mcpOAuthAdminRouter);
 
@@ -352,6 +358,9 @@ async function start() {
   );
   await require('./services/agentService').ensureAgentTables().catch(err =>
     console.error('[agents] limit column ensure failed (apply migration 102):', err.message)
+  );
+  await ensureVoiceTables().catch(err =>
+    console.error('[voice] table ensure failed (apply migration 110):', err.message)
   );
   minioClient.ensureBucket().catch(err =>
     console.error('[minio] bucket ensure failed (will retry on first upload):', err.message)
@@ -558,6 +567,9 @@ async function start() {
   const server = app.listen(PORT, () => {
     console.log(`[ForgeChat] Backend running on port ${PORT}`);
   });
+
+  // Attach VoiceLink & telephony media WebSocket server
+  initVoiceWebsocketServer(server);
 
   // Graceful shutdown so BullMQ marks in-flight jobs as stalled (not lost)
   const shutdown = async (sig) => {

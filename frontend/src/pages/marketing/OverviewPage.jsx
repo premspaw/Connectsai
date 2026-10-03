@@ -98,17 +98,17 @@ export default function OverviewPage({ user, navigate }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 16, marginBottom: 16 }}>
         <Card title="Leads by source">
           {loading ? <Shimmer height={180} /> :
-            <Donut data={(data.bySource || []).map((s, i) => ({ label: s.source, value: s.count, color: SERIES[i % SERIES.length] }))} />}
+            <Donut data={(data?.bySource || []).map((s, i) => ({ label: s.source, value: s.count, color: SERIES[i % SERIES.length] }))} />}
         </Card>
         <Card title="Funnel snapshot" right={<LinkText onClick={() => navigate && navigate('leads')}>Open pipeline</LinkText>}>
           {loading ? <Shimmer height={180} /> :
-            <FunnelBars data={(data.funnel || []).map(f => ({ stage: f.stage, count: f.count }))}
+            <FunnelBars data={(data?.funnel || []).map(f => ({ stage: f.stage, count: f.count }))}
               colorFor={(f) => STAGE_META[f.stage]?.color} onClick={() => navigate && navigate('leads')} />}
         </Card>
       </div>
 
       <Card title="Leads trend" style={{ marginBottom: 16 }}>
-        {loading ? <Shimmer height={150} /> : <LineTrend data={data.trend || []} />}
+        {loading ? <Shimmer height={150} /> : <LineTrend data={data?.trend || []} />}
       </Card>
 
       {/* ── Lead sources (was its own tab) ─────────────────────────────────── */}

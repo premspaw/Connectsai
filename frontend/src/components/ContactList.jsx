@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Search, User } from 'lucide-react';
+import { Search, User, UserPlus, X } from 'lucide-react';
 import { usePolling } from '../hooks/usePolling.js';
 import { useServerEvents } from '../hooks/useServerEvents.js';
 import { api } from '../api.js';
@@ -46,12 +46,38 @@ export default function ContactList({ waNumber, width = 380, selectedContact, on
     if (refreshKey) refetch();
   }, [refreshKey, refetch]);
 
+  const [showNewModal, setShowNewModal] = useState(false);
+  const [newPhone, setNewPhone] = useState('');
+  const [newName, setNewName] = useState('');
+  const [creating, setCreating] = useState(false);
+
+  const handleStartChat = async (phoneToStart, nameToStart) => {
+    const cleanPhone = String(phoneToStart || '').replace(/\D/g, '');
+    if (!cleanPhone || cleanPhone.length < 5) return;
+    setCreating(true);
+    try {
+      if (api.saveContact) {
+        await api.saveContact(waNumber, cleanPhone, nameToStart || `+${cleanPhone}`);
+      }
+      if (refetch) await refetch();
+      onSelectContact(cleanPhone);
+      setShowNewModal(false);
+      setNewPhone('');
+      setNewName('');
+    } catch {
+      onSelectContact(cleanPhone);
+      setShowNewModal(false);
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const contacts = (data || []).filter(c => {
     const matchesSearch = !search || c.contact_number.includes(search) || (c.name && c.name.toLowerCase().includes(search.toLowerCase()));
     if (!matchesSearch) return false;
     // Tag filter (OR): contact matches if it has ANY selected tag.
     if (filterTagIds.length > 0) {
-      const ids = (c.tags || []).map(t => String(t.id));
+      const ids = (c.tags || []).map(t => (typeof t === 'object' && t ? String(t.id) : String(t)));
       if (!filterTagIds.some(id => ids.includes(String(id)))) return false;
     }
     return true;
@@ -89,6 +115,25 @@ export default function ContactList({ waNumber, width = 380, selectedContact, on
             {contacts.length} contacts
           </span>
         </div>
+        <button
+          onClick={() => setShowNewModal(true)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '7px 12px',
+            background: C.primary, color: '#fff',
+            border: 'none', borderRadius: 8,
+            fontSize: 13, fontWeight: 600,
+            cursor: 'pointer', fontFamily: FONT,
+            boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+            transition: 'opacity .15s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.opacity = '0.9'; }}
+          onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
+          title="Start a new chat with any client or number"
+        >
+          <UserPlus size={15} />
+          <span>New Chat</span>
+        </button>
       </div>
 
       {/* Search + tag filter */}
@@ -109,6 +154,21 @@ export default function ContactList({ waNumber, width = 380, selectedContact, on
             }}
           />
         </div>
+        {search.replace(/\D/g, '').length >= 7 && !contacts.some(c => c.contact_number.includes(search.replace(/\D/g, ''))) && (
+          <button
+            onClick={() => handleStartChat(search.replace(/\D/g, ''), '')}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '8px 12px', background: 'var(--c-rowActive, #eef5ff)',
+              border: `1px dashed ${C.primary}`, borderRadius: 8,
+              cursor: 'pointer', fontFamily: FONT, color: C.primary,
+              fontSize: 13, fontWeight: 600, textAlign: 'left',
+            }}
+          >
+            <span>+ Start chat with +{search.replace(/\D/g, '')}</span>
+            <UserPlus size={15} />
+          </button>
+        )}
         <TagMultiSelect
           categories={categories}
           tags={allTags}
@@ -227,29 +287,34 @@ export default function ContactList({ waNumber, width = 380, selectedContact, on
                         ▸ {c.assigned_user_name || `user ${c.assigned_user_id}`}
                       </span>
                     )}
-                    {contactTags.map(t => (
-                      <span key={t.id} style={{
-                        display: 'inline-flex',
-                        alignSelf: 'flex-start',
-                        padding: '2px 6px',
-                        borderRadius: 4,
-                        background: t.color || C.avatarText,
-                        color: '#fff',
-                        border: `1px solid ${t.color || C.avatarText}`,
-                        fontSize: 11,
-                        fontWeight: 700,
-                        letterSpacing: '0.04em',
-                        textTransform: 'uppercase',
-                      }}>
-                        {t.name}
-                      </span>
-                    ))}
+                    {contactTags.map((t, idx) => {
+                      const tagKey = typeof t === 'object' && t?.id ? t.id : (typeof t === 'string' ? t : `tag-${idx}`);
+                      const tagName = typeof t === 'object' && t ? (t.name || t.id) : String(t);
+                      const tagColor = typeof t === 'object' && t?.color ? t.color : C.avatarText;
+                      return (
+                        <span key={tagKey} style={{
+                          display: 'inline-flex',
+                          alignSelf: 'flex-start',
+                          padding: '2px 6px',
+                          borderRadius: 4,
+                          background: tagColor,
+                          color: '#fff',
+                          border: `1px solid ${tagColor}`,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          letterSpacing: '0.04em',
+                          textTransform: 'uppercase',
+                        }}>
+                          {tagName}
+                        </span>
+                      );
+                    })}
                   </div>
                 )}
               </div>
             </button>
           );
-        })},
+        })}
 
         {contacts.length === 0 && !loading && (
           <div style={{ padding: 40, textAlign: 'center', color: C.textMuted, fontSize: 15 }}>
@@ -257,6 +322,102 @@ export default function ContactList({ waNumber, width = 380, selectedContact, on
           </div>
         )}
       </div>
+
+      {showNewModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(3px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+        }}>
+          <div style={{
+            background: 'var(--c-cardBg, #fff)', border: `1px solid ${C.border}`,
+            borderRadius: 14, width: '100%', maxWidth: 420, padding: 24,
+            boxShadow: '0 20px 40px rgba(0,0,0,0.25)', fontFamily: FONT,
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--c-rowActive, #eef5ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.primary }}>
+                  <UserPlus size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: C.text }}>Start New Chat</h3>
+                  <p style={{ margin: '2px 0 0', fontSize: 13, color: C.textMuted }}>Ping or start conversation with a client</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowNewModal(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: 4 }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={e => { e.preventDefault(); handleStartChat(newPhone, newName); }}>
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: C.textSecondary, marginBottom: 6 }}>
+                  Phone Number (with country code) *
+                </label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  placeholder="e.g. +91 98765 43210"
+                  value={newPhone}
+                  onChange={e => setNewPhone(e.target.value)}
+                  style={{
+                    width: '100%', padding: '10px 12px', borderRadius: 8,
+                    border: `1px solid ${C.border}`, background: 'var(--c-inputBg, transparent)',
+                    color: C.text, fontSize: 15, fontFamily: FONT, outline: 'none', boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: C.textSecondary, marginBottom: 6 }}>
+                  Client Name (optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Rahul Verma"
+                  value={newName}
+                  onChange={e => setNewName(e.target.value)}
+                  style={{
+                    width: '100%', padding: '10px 12px', borderRadius: 8,
+                    border: `1px solid ${C.border}`, background: 'var(--c-inputBg, transparent)',
+                    color: C.text, fontSize: 15, fontFamily: FONT, outline: 'none', boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowNewModal(false)}
+                  style={{
+                    padding: '9px 16px', borderRadius: 8, border: `1px solid ${C.border}`,
+                    background: 'transparent', color: C.text, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creating || !newPhone.trim()}
+                  style={{
+                    padding: '9px 18px', borderRadius: 8, border: 'none',
+                    background: C.primary, color: '#fff', fontSize: 14, fontWeight: 600,
+                    cursor: !newPhone.trim() || creating ? 'not-allowed' : 'pointer',
+                    opacity: !newPhone.trim() || creating ? 0.6 : 1,
+                  }}
+                >
+                  {creating ? 'Opening…' : 'Start Chat'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

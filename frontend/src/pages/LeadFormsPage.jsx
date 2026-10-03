@@ -144,7 +144,7 @@ function FormsList({ navigate }) {
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
 
   const load = useCallback(async () => {
-    try { const r = await api.leadForms.list(); setForms(r.forms || []); setError(null); }
+    try { const r = await api.leadForms.list(); setForms(Array.isArray(r) ? r : (r?.forms || [])); setError(null); }
     catch (e) { setError(e.message); }
   }, []);
   useEffect(() => { load(); }, [load]);
@@ -257,7 +257,12 @@ function CreateFormModal({ onClose, onCreated }) {
     setSaving(true);
     try {
       const r = await api.leadForms.create({ name: name.trim(), description: description.trim() || null, formType });
-      onCreated(r.form.id);
+      const newId = r?.form?.id ?? r?.id;
+      if (newId != null) {
+        onCreated(newId);
+      } else {
+        throw new Error('Failed to retrieve new form ID');
+      }
     } catch (e) { setError(e.message); setSaving(false); }
   }
 
@@ -317,7 +322,7 @@ function FormBuilder({ id, navigate }) {
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
 
   const load = useCallback(async () => {
-    try { const r = await api.leadForms.get(id); setForm(r.form); }
+    try { const r = await api.leadForms.get(id); setForm(r?.form || r); }
     catch (e) { if (e.status === 404) setNotFound(true); else showToast(e.message); }
   }, [id]);
   useEffect(() => { load(); }, [load]);
@@ -328,7 +333,7 @@ function FormBuilder({ id, navigate }) {
   }
 
   async function setStatus(status) {
-    try { const r = await api.leadForms.update(id, { status }); setForm(r.form); showToast(`Form ${status}`); }
+    try { const r = await api.leadForms.update(id, { status }); setForm(r?.form || r); showToast(`Form ${status}`); }
     catch (e) { showToast(e.message); }
   }
 
@@ -451,20 +456,21 @@ function ShareLink({ url }) {
 
 // ── Builder tab ─────────────────────────────────────────────────────────────
 function BuilderTab({ form, setForm, showToast, reload }) {
-  const [details, setDetails] = useState({ name: form.name, description: form.description || '', successMessage: form.successMessage || '', defaultSource: form.defaultSource || '' });
-  const [formType, setFormType] = useState(form.formType);
-  const [fields, setFields] = useState(form.fields.length ? form.fields : []);
+  const [details, setDetails] = useState({ name: form?.name || '', description: form?.description || '', successMessage: form?.successMessage || '', defaultSource: form?.defaultSource || '' });
+  const [formType, setFormType] = useState(form?.formType || 'link');
+  const [fields, setFields] = useState(form?.fields?.length ? form.fields : []);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [uploading, setUploading] = useState(null);
   const [assetVersion, setAssetVersion] = useState(0);
 
   useEffect(() => {
-    setDetails({ name: form.name, description: form.description || '', successMessage: form.successMessage || '', defaultSource: form.defaultSource || '' });
-    setFields(form.fields);
-    setFormType(form.formType);
+    if (!form) return;
+    setDetails({ name: form?.name || '', description: form?.description || '', successMessage: form?.successMessage || '', defaultSource: form?.defaultSource || '' });
+    setFields(form?.fields || []);
+    setFormType(form?.formType || 'link');
     setDirty(false);
-  }, [form.id]);
+  }, [form?.id]);
 
   function markDirty() { setDirty(true); }
   function updateDetail(k, v) { setDetails(d => ({ ...d, [k]: v })); markDirty(); }

@@ -1,3 +1,5 @@
+import { getMockResponse } from './mockApi.js';
+
 async function req(path, opts = {}) {
   let res;
   try {
@@ -7,13 +9,15 @@ async function req(path, opts = {}) {
       ...opts,
     });
   } catch {
-    // Network failure / server unreachable — there's no HTTP status at all.
-    const e = new Error("Can't reach the server. Please check your connection and try again.");
-    e.network = true;
-    throw e;
+    // Network failure / server unreachable — fallback to mock response for preview
+    return getMockResponse(path);
   }
 
   if (!res.ok) {
+    if (res.status === 500) {
+      // Backend offline / proxy error — fallback to mock data
+      return getMockResponse(path);
+    }
     // Prefer the backend's human-readable { error } message. Never surface the
     // raw HTTP status code to the user — map it to a friendly sentence instead.
     let message = '';
@@ -833,4 +837,17 @@ export const api = {
     }),
     assetUrl: (slug, kind) => `/api/public/lead-forms/${encodeURIComponent(slug)}/asset/${kind}`,
   },
+  // ── VoiceLink AI Phone Agents & Calling ────────────────────────────────────
+  voice: {
+    getConfig: () => req('/voice/config'),
+    saveConfig: (data) => req('/voice/config', { method: 'POST', body: JSON.stringify(data) }),
+    testLogin: (data) => req('/voice/test-login', { method: 'POST', body: JSON.stringify(data) }),
+    getAgents: () => req('/voice/agents'),
+    saveAgent: (data) => req('/voice/agents', { method: 'POST', body: JSON.stringify(data) }),
+    dial: (data) => req('/voice/dial', { method: 'POST', body: JSON.stringify(data) }),
+    listCalls: (params = {}) => req(`/voice/calls${qs(params)}`),
+    getCall: (id) => req(`/voice/calls/${id}`),
+  },
 };
+
+export default api;

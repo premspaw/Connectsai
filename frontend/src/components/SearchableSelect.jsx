@@ -85,7 +85,8 @@ export default function SearchableSelect({
         style={{
           width: '100%', display: 'flex', alignItems: 'center', gap: 8,
           padding: '10px 32px 10px 12px', borderRadius: 8,
-          border: `1.5px solid ${open ? C.primary : C.border}`,
+          borderWidth: 1.5, borderStyle: 'solid',
+          borderColor: open ? C.primary : C.border,
           fontSize: 15, fontFamily: FONT, color: selected ? C.text : C.textMuted,
           background: disabled ? 'var(--c-hover)' : 'var(--c-cardBg)',
           cursor: disabled ? 'not-allowed' : 'pointer', textAlign: 'left',

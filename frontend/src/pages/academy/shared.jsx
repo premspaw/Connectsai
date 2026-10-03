@@ -145,7 +145,7 @@ export function Table({ columns, rows, renderRow, onRowClick, empty, keyOf }) {
         </thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={keyOf ? keyOf(r) : i}
+            <tr key={keyOf ? (keyOf(r) ?? i) : i}
               onClick={onRowClick ? () => onRowClick(r) : undefined}
               style={{ cursor: onRowClick ? 'pointer' : 'default', transition: 'background .12s' }}
               onMouseEnter={e => { if (onRowClick) e.currentTarget.style.background = C.hover; }}

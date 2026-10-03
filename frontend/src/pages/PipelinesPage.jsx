@@ -78,11 +78,12 @@ export default function PipelinesPage({ user }) {
   useEffect(() => {
     let alive = true;
     api.pipelines.list()
-      .then(({ pipelines }) => {
+      .then((res) => {
         if (!alive) return;
-        setPipelines(pipelines);
-        setSelectedId(prev => prev || (pipelines[0]?.id ?? null));
-        if (!pipelines.length) setLoading(false);
+        const list = Array.isArray(res) ? res : (res?.pipelines || []);
+        setPipelines(list);
+        setSelectedId(prev => prev || (list[0]?.id ?? null));
+        if (!list.length) setLoading(false);
       })
       .catch(() => { if (alive) { setError('Could not load pipelines.'); setLoading(false); } });
     return () => { alive = false; };
@@ -102,7 +103,10 @@ export default function PipelinesPage({ user }) {
   }, [selectedId, loadBoard]);
 
   const refreshPipelines = useCallback(() =>
-    api.pipelines.list().then(({ pipelines }) => setPipelines(pipelines)).catch(() => {}), []);
+    api.pipelines.list().then((res) => {
+      const list = Array.isArray(res) ? res : (res?.pipelines || []);
+      setPipelines(list);
+    }).catch(() => {}), []);
 
   // Live updates: any board change on the server (deal/stage/pipeline mutation,
   // including a delete from another user's session) pushes `pipeline-changed`.

@@ -263,7 +263,7 @@ const TH = ['Name', 'Description', 'Status', 'Trigger', 'Created', 'Actions'];
 // are snake_case. The table's date column is `created_at`, which is what the
 // default sort orders by — the list used to arrive in `updated_at DESC` order
 // from the API, which made the visible Created dates look shuffled.
-const AUTO_FIELDS = { created: c => c.created_at, updated: c => c.updated_at, name: c => c.name };
+const AUTO_FIELDS = { created: c => c?.created_at, updated: c => c?.updated_at, name: c => c?.name || '' };
 
 // ─── Browser (root list + inside-a-folder view) ─────────────────────────────
 function AutomationsBrowser({
@@ -287,9 +287,9 @@ function AutomationsBrowser({
 
   const q = search.trim().toLowerCase();
   const matchesAuto = (c) => !q
-    || c.name.toLowerCase().includes(q)
-    || (c.description || '').toLowerCase().includes(q)
-    || c.status.toLowerCase().includes(q);
+    || (c?.name || '').toLowerCase().includes(q)
+    || (c?.description || '').toLowerCase().includes(q)
+    || (c?.status || '').toLowerCase().includes(q);
 
   // Automations in scope: inside a folder → that folder's; at root → ungrouped only.
   const scopeAutos = useMemo(() => (
@@ -308,7 +308,7 @@ function AutomationsBrowser({
   // They sort by the same key but stay above the automations — folders first is
   // the file-manager convention this browser is built on.
   const folderRows = useMemo(
-    () => (inFolder ? [] : sortList(folders.filter(f => !q || f.name.toLowerCase().includes(q)), sort, AUTO_FIELDS)),
+    () => (inFolder ? [] : sortList(folders.filter(f => !q || (f?.name || '').toLowerCase().includes(q)), sort, AUTO_FIELDS)),
     [folders, inFolder, q, sort]
   );
   const folderTotal = (fid) => chatbots.filter(c => String(c.folder_id ?? '') === String(fid)).length;
@@ -595,8 +595,8 @@ export default function ChatbotBuilderPage({ subParts = [], navigate }) {
         api.chatbots.list(),
         api.automationFolders.list().catch(() => []),
       ]);
-      setChatbots(bots);
-      setFolders(fols);
+      setChatbots(Array.isArray(bots) ? bots : (bots?.chatbots || []));
+      setFolders(Array.isArray(fols) ? fols : (fols?.folders || []));
     } catch (err) {
       console.error('Failed to load automations:', err);
     } finally {
@@ -709,14 +709,25 @@ export default function ChatbotBuilderPage({ subParts = [], navigate }) {
   };
 
   const handleCreateFolder = async (name) => {
-    const folder = await api.automationFolders.create(name);
-    setFolders(prev => [...prev, folder].sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase())));
+    try {
+      const folder = await api.automationFolders.create(name);
+      const folderName = folder?.name || name;
+      const newFolder = { id: folder?.id || Date.now(), name: folderName };
+      setFolders(prev => [...prev, newFolder].sort((a, b) => (a?.name || '').toLowerCase().localeCompare((b?.name || '').toLowerCase())));
+    } catch (err) {
+      notify(err?.message || 'Failed to create project');
+    }
   };
 
   const handleRenameFolder = async (id, name) => {
-    const updated = await api.automationFolders.update(id, name);
-    setFolders(prev => prev.map(f => String(f.id) === String(id) ? { ...f, name: updated.name } : f)
-      .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase())));
+    try {
+      const updated = await api.automationFolders.update(id, name);
+      const newName = updated?.name || name;
+      setFolders(prev => prev.map(f => String(f.id) === String(id) ? { ...f, name: newName } : f)
+        .sort((a, b) => (a?.name || '').toLowerCase().localeCompare((b?.name || '').toLowerCase())));
+    } catch (err) {
+      notify(err?.message || 'Failed to rename project');
+    }
   };
 
   const handleDeleteFolder = async (folder) => {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, Fragment } from 'react';
-import { Plus, Flame, RefreshCw, X } from 'lucide-react';
+import { Plus, Flame, RefreshCw, X, Phone } from 'lucide-react';
 import { api } from '../../api.js';
+import { VoiceCallModal } from '../../components/VoiceCallModal.jsx';
 import { C, FONT, MONO } from '../../constants.js';
 import { useServerEvents } from '../../hooks/useServerEvents.js';
 import { showError } from '../../lib/feedback.js';
@@ -43,13 +44,15 @@ export default function PipelinePage({ user, navigate, tabs, view = 'board', onC
   const conv = {};
   (board?.conversions || []).forEach(c => { conv[c.to] = c.pct; });
 
+  const boardCols = board?.columns || (board && typeof board === 'object' && !board.columns ? board : null) || {};
+
   const filterLead = (l) =>
     (!filterBda || l.assignedBda === filterBda) &&
     (!filterSource || l.source === filterSource);
 
   const bdaOptions = (() => {
     const set = new Map();
-    Object.values(board?.columns || {}).flat().forEach(l => { if (l.assignedBda) set.set(l.assignedBda, l.assignedUserName || l.assignedBda); });
+    Object.values(boardCols).flat().forEach(l => { if (l?.assignedBda) set.set(l.assignedBda, l.assignedUserName || l.assignedBda); });
     return [{ value: '', label: 'All BDAs' }, ...[...set].map(([v, label]) => ({ value: v, label: label || v }))];
   })();
 
@@ -58,10 +61,12 @@ export default function PipelinePage({ user, navigate, tabs, view = 'board', onC
     // optimistic
     setBoard(b => {
       if (!b) return b;
-      const cols = { ...b.columns };
+      const hasCols = !!b.columns;
+      const currentCols = hasCols ? b.columns : b;
+      const cols = { ...currentCols };
       cols[lead.stage] = (cols[lead.stage] || []).filter(x => x.id !== lead.id);
       cols[stage] = [{ ...lead, stage }, ...(cols[stage] || [])];
-      return { ...b, columns: cols };
+      return hasCols ? { ...b, columns: cols } : cols;
     });
     try { await api.leads.move(lead.id, stage); load(true); }
     catch (e) { showError(e.message); load(true); }
@@ -88,14 +93,14 @@ export default function PipelinePage({ user, navigate, tabs, view = 'board', onC
       }
     >
       {tabs}
-      {loading ? (
+      {loading || !board ? (
         <div style={{ display: 'flex', gap: 12 }}>
           {FUNNEL.map(s => <div key={s} style={{ flex: 1 }}><Shimmer height={340} radius={12} /></div>)}
         </div>
       ) : (
         <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', overflowX: 'auto', paddingBottom: 8 }}>
-          {FUNNEL.map((stage, i) => {
-            const items = (board.columns[stage] || []).filter(filterLead);
+          {FUNNEL.map((stage) => {
+            const items = (boardCols[stage] || []).filter(filterLead);
             const m = STAGE_META[stage];
             return (
               <div key={stage} style={{ flex: '1 0 220px', minWidth: 220 }}>
@@ -111,7 +116,7 @@ export default function PipelinePage({ user, navigate, tabs, view = 'board', onC
           <div style={{ flex: '0 0 220px', minWidth: 220 }}>
             <Column
               stage="cold_lost" meta={STAGE_META.cold_lost} dashed
-              items={(board.columns.cold_lost || []).filter(filterLead)}
+              items={(boardCols.cold_lost || []).filter(filterLead)}
               coldAfter={coldAfter} onDrop={moveLead} drag={drag} setDrag={setDrag}
               onCard={(l) => { selectedRef.current = l.id; setDetail(l); }}
             />
@@ -202,6 +207,7 @@ function Avatar({ name }) {
 function LeadDrawer({ lead, onClose, navigate, onOpenLeads, onChanged, isAdmin }) {
   const { leadCustom } = useFieldRegistry();
   const [timeline, setTimeline] = useState(null);
+  const [calling, setCalling] = useState(false);
   useEffect(() => { api.leads.timeline(lead.id).then(setTimeline).catch(() => setTimeline({ events: [], activity: [] })); }, [lead.id]);
   const row = (k, v) => (
     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: `1px solid ${C.border}`, fontSize: 15 }}>
@@ -231,10 +237,28 @@ function LeadDrawer({ lead, onClose, navigate, onOpenLeads, onChanged, isAdmin }
           {leadCustom.map(f => (
             <Fragment key={f.fieldKey}>{row(f.label, formatFieldValue(lead.customFields?.[f.fieldKey]))}</Fragment>
           ))}
-          <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
+          <div style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <Button variant="secondary" onClick={() => (onOpenLeads ? onOpenLeads() : navigate && navigate('leads', 'list'))}>Open in the table</Button>
             {lead.hasWhatsappThread && <Button variant="secondary" onClick={() => navigate && navigate('chats')}>Open chat</Button>}
+            {lead.whatsappNumber && (
+              <Button
+                variant="primary"
+                onClick={() => setCalling(true)}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#00A884' }}
+              >
+                <Phone size={14} /> Call with AI
+              </Button>
+            )}
           </div>
+          {calling && (
+            <VoiceCallModal
+              isOpen={calling}
+              onClose={() => setCalling(false)}
+              initialPhone={lead.whatsappNumber}
+              leadId={lead.id}
+              leadName={lead.name}
+            />
+          )}
           <div style={{ marginTop: 22, fontSize: 14, fontWeight: 700, letterSpacing: '.05em', textTransform: 'uppercase', color: C.textMuted, marginBottom: 8 }}>Activity timeline</div>
           {!timeline ? <Shimmer height={80} /> : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

@@ -9,8 +9,9 @@
 // Fields): lead fields flagged show_in_sales are the table/detail columns, and
 // custom transaction fields appear in the transactions table + both modals.
 import { useState, useEffect, useCallback, useRef, Fragment } from 'react';
-import { Plus, Receipt, Check, Trash2, ArrowLeft, Pencil, Download, ChevronDown, FileSpreadsheet, FileText, MessageCircle } from 'lucide-react';
+import { Plus, Receipt, Check, Trash2, ArrowLeft, Pencil, Download, ChevronDown, FileSpreadsheet, FileText, MessageCircle, Phone } from 'lucide-react';
 import { api } from '../../api.js';
+import { VoiceCallModal } from '../../components/VoiceCallModal.jsx';
 import { C, FONT, MONO } from '../../constants.js';
 import { showError, showSuccess } from '../../lib/feedback.js';
 import { PageShell, Button, Table, Td, Modal, Field, inputStyle, EmptyState, Badge, StageBadge, fmtINR, fmtDate } from '../academy/shared.jsx';
@@ -88,38 +89,48 @@ function ExportMenu() {
 }
 
 
-// A customer's WhatsApp number, linked to their chat when a thread exists.
-// stopPropagation matters: in the Sales Log table the whole ROW is clickable
-// (it opens the sale), so without it a click would fire both navigations.
-function ChatNumber({ number, waNumber, contactNumber, navigate }) {
+function ChatNumber({ number, waNumber, contactNumber, navigate, onCall }) {
   if (!number) return <span style={{ color: C.textMuted }}>—</span>;
-  if (!waNumber || !contactNumber || !navigate) {
-    return <span title="No WhatsApp chat for this number yet">{number}</span>;
-  }
   return (
-    <span
-      role="link"
-      tabIndex={0}
-      title="Open this chat"
-      onClick={e => { e.stopPropagation(); navigate('chats', waNumber, contactNumber); }}
-      onKeyDown={e => { if (e.key === 'Enter') { e.stopPropagation(); navigate('chats', waNumber, contactNumber); } }}
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: C.primary, cursor: 'pointer' }}
-    >
-      {number}<MessageCircle size={12} />
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      {waNumber && contactNumber && navigate ? (
+        <span
+          role="link"
+          tabIndex={0}
+          title="Open this chat"
+          onClick={e => { e.stopPropagation(); navigate('chats', waNumber, contactNumber); }}
+          onKeyDown={e => { if (e.key === 'Enter') { e.stopPropagation(); navigate('chats', waNumber, contactNumber); } }}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: C.primary, cursor: 'pointer' }}
+        >
+          {number}<MessageCircle size={12} />
+        </span>
+      ) : (
+        <span title="Customer phone">{number}</span>
+      )}
+      {onCall && (
+        <button
+          type="button"
+          title="Call with AI Phone Agent"
+          onClick={e => { e.stopPropagation(); onCall(number); }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: '#00A884', display: 'inline-flex' }}
+        >
+          <Phone size={13} />
+        </button>
+      )}
     </span>
   );
 }
 
 // One Sales Log cell per registry field (system renderers preserved; custom
 // fields read the sale's custom_fields bag).
-function SaleCell({ f, s, navigate }) {
+function SaleCell({ f, s, navigate, onCall }) {
   if (f.isSystem) {
     switch (f.fieldKey) {
       case 'name': return <Td bold>{s.name || '—'}</Td>;
       case 'whatsapp_number': return (
         <Td mono color={C.textSecondary}>
           <ChatNumber number={s.whatsappNumber} waNumber={s.chatWaNumber}
-            contactNumber={s.chatContactNumber} navigate={navigate} />
+            contactNumber={s.chatContactNumber} navigate={navigate} onCall={onCall} />
         </Td>
       );
       case 'email': return <Td color={C.textSecondary} style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.email || '—'}</Td>;
@@ -156,6 +167,7 @@ function SalesLogList({ user, navigate }) {
   const [sales, setSales] = useState(null);
   const [products, setProducts] = useState([]);
   const [addSale, setAddSale] = useState(false);
+  const [callingPhone, setCallingPhone] = useState(null);
   const [confirmEl, confirm] = useConfirm();
 
   const load = useCallback(async () => {
@@ -206,7 +218,7 @@ function SalesLogList({ user, navigate }) {
           <Table columns={columns} rows={sales} keyOf={s => s.id} onRowClick={s => navigate('onboarding', String(s.id))}
             renderRow={s => (
               <>
-                {visible.map(f => <Fragment key={f.fieldKey}><SaleCell f={f} s={s} navigate={navigate} /></Fragment>)}
+                {visible.map(f => <Fragment key={f.fieldKey}><SaleCell f={f} s={s} navigate={navigate} onCall={setCallingPhone} /></Fragment>)}
                 {isAdmin && (
                   <Td align="right">
                     <button title="Delete sale" onClick={(e) => remove(s, e)} style={{ ...iconBtn, color: C.primary }}><Trash2 size={14} /></button>
@@ -218,6 +230,13 @@ function SalesLogList({ user, navigate }) {
       {addSale && (
         <AddSaleModal products={products} sources={sources} leadFields={leadFields} txFields={txFields}
           onClose={() => setAddSale(false)} onSaved={() => { setAddSale(false); load(); }} />
+      )}
+      {callingPhone && (
+        <VoiceCallModal
+          isOpen={Boolean(callingPhone)}
+          onClose={() => setCallingPhone(null)}
+          initialPhone={callingPhone}
+        />
       )}
       {confirmEl}
     </PageShell>

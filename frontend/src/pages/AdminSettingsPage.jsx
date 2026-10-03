@@ -20,6 +20,7 @@ import { useTableSelection, SelectAllCheckbox, RowCheckbox, BulkDeleteButton, ru
 import { MetaAdsPanel } from '../components/MarketingConnections.jsx';
 import { FunnelSettingsContent } from './sales/FunnelSettingsPage.jsx';
 import EntityFieldsManager from '../components/EntityFieldsManager.jsx';
+import { VoiceCallModal } from '../components/VoiceCallModal.jsx';
 
 const TABS = [
   { key: 'general', label: 'General', icon: Settings },
@@ -28,6 +29,7 @@ const TABS = [
   { key: 'fields', label: 'Fields', icon: LayoutList },
   { key: 'funnel', label: 'Funnel', icon: SlidersHorizontal },
   { key: 'whatsapp-accounts', label: 'WhatsApp Accounts', icon: MessageSquare },
+  { key: 'voice-calling', label: 'AI Voice Calling', icon: Phone },
   { key: 'ai-models', label: 'AI Models', icon: Bot },
   { key: 'integrations', label: 'Integrations', icon: Plug },
   { key: 'mcp', label: 'MCP Tools', icon: PlugZap },
@@ -1568,6 +1570,494 @@ const thStyle = { textAlign: 'left', padding: '12px 16px', fontSize: 13, fontWei
 const tdStyle = { padding: '14px 16px', fontSize: 15, color: C.text, verticalAlign: 'middle' };
 const iconBtnStyle = { background: 'transparent', border: 'none', cursor: 'pointer', padding: 6, marginLeft: 4, color: C.textSecondary };
 
+// ─── Voice Calling Tab ───────────────────────────────────────────────────────
+// VoiceLink Telephony & Gemini Live Real-time AI Phone Calling.
+function VoiceCallingTab() {
+  const [config, setConfig] = useState({
+    apiBaseUrl: 'https://app.voicelink.co.in/api',
+    mode: 'live',
+    resellerUsername: '',
+    resellerPassword: '',
+    didNumber: '',
+    wsBaseUrl: '',
+    webhookSecret: '',
+    hasPassword: false,
+    hasToken: false,
+    accessTokenMasked: '',
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState(null);
+
+  const [agents, setAgents] = useState([]);
+  const [editingAgent, setEditingAgent] = useState(null);
+  const [showAgentModal, setShowAgentModal] = useState(false);
+  const [agentForm, setAgentForm] = useState({
+    name: '',
+    description: '',
+    systemPrompt: '',
+    voiceName: 'Aoede',
+    geminiModel: 'gemini-3.1-flash-live-preview',
+    temperature: 0.7,
+    isDefault: false,
+  });
+
+  const [calls, setCalls] = useState([]);
+  const [showDialer, setShowDialer] = useState(false);
+  const [dialPhone, setDialPhone] = useState('');
+  const [activeCallView, setActiveCallView] = useState(null);
+
+  const refreshAll = async () => {
+    setLoading(true);
+    try {
+      const [cfg, ags, clls] = await Promise.all([
+        api.voice.getConfig().catch(() => ({})),
+        api.voice.getAgents().catch(() => []),
+        api.voice.listCalls({ limit: 20 }).catch(() => ({ calls: [] })),
+      ]);
+      if (cfg) setConfig(c => ({ ...c, ...cfg, resellerPassword: '' }));
+      if (ags) setAgents(ags);
+      if (clls?.calls) setCalls(clls.calls);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { refreshAll(); }, []);
+
+  const saveConfig = async (e) => {
+    if (e) e.preventDefault();
+    setSaving(true);
+    try {
+      await api.voice.saveConfig(config);
+      showSuccess('VoiceLink configuration saved successfully');
+      refreshAll();
+    } catch (err) {
+      showError(err.message || 'Failed to save configuration');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const testLogin = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await api.voice.testLogin({
+        username: config.resellerUsername,
+        password: config.resellerPassword,
+        apiBaseUrl: config.apiBaseUrl,
+      });
+      setTestResult({ success: true, message: res.message || 'Connected successfully!' });
+      showSuccess('VoiceLink authentication verified! Token minted.');
+      refreshAll();
+    } catch (err) {
+      setTestResult({ success: false, message: err.message });
+      showError(err.message || 'Authentication test failed');
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const saveAgent = async () => {
+    try {
+      await api.voice.saveAgent({ ...agentForm, id: editingAgent?.id });
+      showSuccess('Voice Agent saved');
+      setShowAgentModal(false);
+      refreshAll();
+    } catch (err) {
+      showError(err.message || 'Failed to save Voice Agent');
+    }
+  };
+
+  if (loading) {
+    return <div style={{ flex: 1, padding: 28, color: C.textMuted }}>Loading Voice Calling Settings…</div>;
+  }
+
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', padding: 28, fontFamily: FONT, color: C.text }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: C.text, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Phone size={22} color={C.primary} /> AI Voice Calling & Telephony
+          </h2>
+          <div style={{ fontSize: 14, color: C.textSecondary, marginTop: 4 }}>
+            VoiceLink Cloud Telephony & Gemini Live Real-time Phone Agents
+          </div>
+        </div>
+        <button
+          onClick={() => { setDialPhone(''); setShowDialer(true); }}
+          style={{
+            padding: '10px 18px', background: 'linear-gradient(135deg, #00A884, #008069)',
+            border: 'none', borderRadius: 8, color: '#fff', fontSize: 14, fontWeight: 700,
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 12px rgba(0,168,132,0.3)'
+          }}
+        >
+          <PhoneCall size={16} /> Place Test Call
+        </button>
+      </div>
+
+      {/* 1. VoiceLink Credentials Section */}
+      <div style={{ background: 'var(--c-cardBg)', border: `1px solid ${C.border}`, borderRadius: 12, padding: 22, marginBottom: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>VoiceLink Reseller Configuration</h3>
+            <div style={{ fontSize: 13, color: C.textMuted, marginTop: 2 }}>
+              Connect your VoiceLink account to enable PSTN dialing and live audio WebSockets.
+            </div>
+          </div>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 20,
+            fontSize: 12, fontWeight: 600,
+            background: config.hasToken ? 'rgba(0, 168, 132, 0.15)' : 'rgba(234, 179, 8, 0.15)',
+            color: config.hasToken ? '#00A884' : '#eab308',
+          }}>
+            {config.hasToken ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
+            {config.hasToken ? 'Token Active' : 'Credentials Needed'}
+          </div>
+        </div>
+
+        {testResult && (
+          <div style={{
+            marginBottom: 16, padding: '10px 14px', borderRadius: 8,
+            background: testResult.success ? 'rgba(0, 168, 132, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+            border: `1px solid ${testResult.success ? 'rgba(0, 168, 132, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+            color: testResult.success ? '#00A884' : '#f87171', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8
+          }}>
+            {testResult.success ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+            <span>{testResult.message}</span>
+          </div>
+        )}
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.textSecondary, marginBottom: 6 }}>VOICELINK API BASE URL</label>
+            <input
+              style={{ width: '100%', padding: '10px 12px', background: 'var(--c-inputBg)', border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 14, boxSizing: 'border-box' }}
+              value={config.apiBaseUrl}
+              onChange={e => setConfig({ ...config, apiBaseUrl: e.target.value })}
+              placeholder="https://app.voicelink.co.in/api"
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.textSecondary, marginBottom: 6 }}>RESELLER USERNAME / EMAIL</label>
+            <input
+              style={{ width: '100%', padding: '10px 12px', background: 'var(--c-inputBg)', border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 14, boxSizing: 'border-box' }}
+              value={config.resellerUsername}
+              onChange={e => setConfig({ ...config, resellerUsername: e.target.value })}
+              placeholder="e.g. your-email@domain.com"
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.textSecondary, marginBottom: 6 }}>RESELLER PASSWORD</label>
+            <input
+              type="password"
+              style={{ width: '100%', padding: '10px 12px', background: 'var(--c-inputBg)', border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 14, boxSizing: 'border-box' }}
+              value={config.resellerPassword}
+              onChange={e => setConfig({ ...config, resellerPassword: e.target.value })}
+              placeholder={config.hasPassword ? '••••••••  (saved)' : 'Enter VoiceLink password'}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.textSecondary, marginBottom: 6 }}>DEFAULT OUTBOUND DID / CALLER ID</label>
+            <input
+              style={{ width: '100%', padding: '10px 12px', background: 'var(--c-inputBg)', border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 14, boxSizing: 'border-box' }}
+              value={config.didNumber}
+              onChange={e => setConfig({ ...config, didNumber: e.target.value })}
+              placeholder="e.g. 919876543210"
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.textSecondary, marginBottom: 6 }}>PUBLIC WEBSOCKET BASE URL (WSS)</label>
+            <input
+              style={{ width: '100%', padding: '10px 12px', background: 'var(--c-inputBg)', border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 14, boxSizing: 'border-box' }}
+              value={config.wsBaseUrl}
+              onChange={e => setConfig({ ...config, wsBaseUrl: e.target.value })}
+              placeholder="wss://your-domain.com or wss://...ngrok-free.app"
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.textSecondary, marginBottom: 6 }}>MODE</label>
+            <select
+              style={{ width: '100%', padding: '10px 12px', background: 'var(--c-inputBg)', border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 14, boxSizing: 'border-box' }}
+              value={config.mode}
+              onChange={e => setConfig({ ...config, mode: e.target.value })}
+            >
+              <option value="live">Live (Real PSTN Calls)</option>
+              <option value="test">Test / Sandbox</option>
+            </select>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, marginTop: 18, justifyContent: 'flex-end' }}>
+          <button
+            type="button"
+            onClick={testLogin}
+            disabled={testing || !config.resellerUsername}
+            style={{
+              padding: '9px 16px', background: 'var(--c-surface, rgba(255,255,255,0.06))',
+              border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 14,
+              fontWeight: 600, cursor: testing ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 6
+            }}
+          >
+            {testing ? <Loader2 size={14} className="spin" /> : <RefreshCw size={14} />}
+            Test & Mint Token
+          </button>
+          <button
+            type="button"
+            onClick={saveConfig}
+            disabled={saving}
+            style={{
+              padding: '9px 20px', background: C.primary,
+              border: 'none', borderRadius: 8, color: '#fff', fontSize: 14,
+              fontWeight: 600, cursor: saving ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 6
+            }}
+          >
+            {saving && <Loader2 size={14} className="spin" />}
+            Save Configuration
+          </button>
+        </div>
+      </div>
+
+      {/* 2. Voice Agent Personas */}
+      <div style={{ background: 'var(--c-cardBg)', border: `1px solid ${C.border}`, borderRadius: 12, padding: 22, marginBottom: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>AI Voice Agent Personas (Gemini Live)</h3>
+            <div style={{ fontSize: 13, color: C.textMuted, marginTop: 2 }}>
+              Configure voice tones, instructions, and Gemini Live models for phone calls.
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              setEditingAgent(null);
+              setAgentForm({ name: '', description: '', systemPrompt: '', voiceName: 'Aoede', geminiModel: 'gemini-3.1-flash-live-preview', temperature: 0.7, isDefault: false });
+              setShowAgentModal(true);
+            }}
+            style={{
+              padding: '8px 14px', background: 'var(--c-surface, rgba(255,255,255,0.06))',
+              border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 13, fontWeight: 600,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6
+            }}
+          >
+            <Plus size={14} /> New Voice Agent
+          </button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
+          {agents.map(a => (
+            <div key={a.id} style={{
+              background: 'var(--c-surface, rgba(255, 255, 255, 0.03))',
+              border: `1px solid ${C.border}`, borderRadius: 10, padding: 16,
+              display: 'flex', flexDirection: 'column', justifyContent: 'space-between'
+            }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{a.name}</div>
+                  {a.is_default && (
+                    <span style={{ fontSize: 11, fontWeight: 700, background: 'rgba(0,168,132,0.15)', color: '#00A884', padding: '2px 8px', borderRadius: 12 }}>
+                      DEFAULT
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: 13, color: C.textSecondary, marginBottom: 12, minHeight: 36, lineHeight: 1.4 }}>
+                  {a.description || a.system_prompt.slice(0, 100) + '...'}
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: 12, color: C.textMuted }}>
+                  <span style={{ padding: '2px 8px', background: 'rgba(255,255,255,0.06)', borderRadius: 6 }}>Voice: <strong>{a.voice_name || 'Aoede'}</strong></span>
+                  <span style={{ padding: '2px 8px', background: 'rgba(255,255,255,0.06)', borderRadius: 6 }}>Model: <strong>{a.gemini_model}</strong></span>
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 14 }}>
+                <button
+                  onClick={() => {
+                    setEditingAgent(a);
+                    setAgentForm({
+                      name: a.name, description: a.description || '', systemPrompt: a.system_prompt,
+                      voiceName: a.voice_name || 'Aoede', geminiModel: a.gemini_model, temperature: a.temperature || 0.7,
+                      isDefault: a.is_default,
+                    });
+                    setShowAgentModal(true);
+                  }}
+                  style={{ padding: '6px 12px', background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 6, color: C.text, fontSize: 12, cursor: 'pointer', fontWeight: 600 }}
+                >
+                  Edit Persona
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 3. Call History Table */}
+      <div style={{ background: 'var(--c-cardBg)', border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden' }}>
+        <div style={{ padding: '16px 20px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Call History & Transcripts</h3>
+            <div style={{ fontSize: 13, color: C.textMuted, marginTop: 2 }}>
+              Logs of inbound and outbound calls, duration, and Gemini Live conversations.
+            </div>
+          </div>
+          <button
+            onClick={refreshAll}
+            style={{ padding: '6px 12px', background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 6, color: C.textSecondary, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            <RefreshCw size={13} /> Refresh
+          </button>
+        </div>
+
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 14 }}>
+          <thead>
+            <tr style={{ background: 'var(--c-surface, rgba(255,255,255,0.02))', borderBottom: `1px solid ${C.border}` }}>
+              <th style={thStyle}>Date & Time</th>
+              <th style={thStyle}>Phone Number</th>
+              <th style={thStyle}>Agent Persona</th>
+              <th style={thStyle}>Status</th>
+              <th style={thStyle}>Duration</th>
+              <th style={thStyle}>Transcript</th>
+            </tr>
+          </thead>
+          <tbody>
+            {calls.length === 0 ? (
+              <tr>
+                <td colSpan={6} style={{ padding: '32px 16px', textAlign: 'center', color: C.textMuted }}>
+                  No voice calls placed yet. Use the "Place Test Call" button above to test your agent.
+                </td>
+              </tr>
+            ) : (
+              calls.map(c => (
+                <tr key={c.id} style={{ borderBottom: `1px solid ${C.border}` }}>
+                  <td style={tdStyle}>{new Date(c.created_at).toLocaleString()}</td>
+                  <td style={tdStyle}><span style={{ fontFamily: 'DM Mono, monospace', fontWeight: 600 }}>{c.phone_number}</span></td>
+                  <td style={tdStyle}>{c.agent_name || 'Default Agent'}</td>
+                  <td style={tdStyle}>
+                    <span style={{
+                      padding: '3px 8px', borderRadius: 12, fontSize: 12, fontWeight: 700,
+                      background: c.status === 'completed' ? 'rgba(0,168,132,0.15)' : c.status === 'failed' ? 'rgba(239,68,68,0.15)' : 'rgba(234,179,8,0.15)',
+                      color: c.status === 'completed' ? '#00A884' : c.status === 'failed' ? '#ef4444' : '#eab308',
+                      textTransform: 'uppercase'
+                    }}>
+                      {c.status}
+                    </span>
+                  </td>
+                  <td style={tdStyle}>{c.duration_seconds ? `${c.duration_seconds}s` : '—'}</td>
+                  <td style={tdStyle}>
+                    {c.transcript ? (
+                      <button
+                        onClick={() => setActiveCallView(c)}
+                        style={{ padding: '4px 10px', background: 'rgba(255,255,255,0.06)', border: `1px solid ${C.border}`, borderRadius: 6, color: C.text, fontSize: 12, cursor: 'pointer', fontWeight: 600 }}
+                      >
+                        View Transcript
+                      </button>
+                    ) : (
+                      <span style={{ color: C.textMuted }}>No transcript</span>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Transcript Modal */}
+      {activeCallView && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ background: 'var(--c-cardBg)', border: `1px solid ${C.border}`, borderRadius: 16, width: '100%', maxWidth: 540, maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ padding: '16px 20px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontWeight: 700, fontSize: 16 }}>Call Transcript — {activeCallView.phone_number}</div>
+              <button onClick={() => setActiveCallView(null)} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 20, cursor: 'pointer' }}>✕</button>
+            </div>
+            <div style={{ padding: 20, overflowY: 'auto', flex: 1, fontSize: 13, lineHeight: 1.6, color: C.textSecondary }}>
+              <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', margin: 0 }}>{activeCallView.transcript}</pre>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Agent Persona Edit Modal */}
+      {showAgentModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ background: 'var(--c-cardBg)', border: `1px solid ${C.border}`, borderRadius: 16, width: '100%', maxWidth: 500, padding: 24 }}>
+            <h3 style={{ margin: '0 0 16px', fontSize: 17, fontWeight: 700 }}>{editingAgent ? 'Edit Voice Agent' : 'Create Voice Agent'}</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, marginBottom: 4 }}>Agent Name</label>
+                <input
+                  style={{ width: '100%', padding: '10px 12px', background: 'var(--c-inputBg)', border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, boxSizing: 'border-box' }}
+                  value={agentForm.name}
+                  onChange={e => setAgentForm({ ...agentForm, name: e.target.value })}
+                  placeholder="e.g. Sales Qualifier"
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, marginBottom: 4 }}>Voice Tone</label>
+                <select
+                  style={{ width: '100%', padding: '10px 12px', background: 'var(--c-inputBg)', border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, boxSizing: 'border-box' }}
+                  value={agentForm.voiceName}
+                  onChange={e => setAgentForm({ ...agentForm, voiceName: e.target.value })}
+                >
+                  <option value="Aoede">Aoede (Confident, Friendly)</option>
+                  <option value="Puck">Puck (Energetic, Natural)</option>
+                  <option value="Charon">Charon (Professional, Calm)</option>
+                  <option value="Fenrir">Fenrir (Authoritative)</option>
+                  <option value="Kore">Kore (Warm, Conversational)</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, marginBottom: 4 }}>Gemini Live Model</label>
+                <input
+                  style={{ width: '100%', padding: '10px 12px', background: 'var(--c-inputBg)', border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, boxSizing: 'border-box' }}
+                  value={agentForm.geminiModel}
+                  onChange={e => setAgentForm({ ...agentForm, geminiModel: e.target.value })}
+                  placeholder="gemini-3.1-flash-live-preview"
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, marginBottom: 4 }}>System Prompt / Instructions</label>
+                <textarea
+                  rows={4}
+                  style={{ width: '100%', padding: '10px 12px', background: 'var(--c-inputBg)', border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, boxSizing: 'border-box', resize: 'vertical' }}
+                  value={agentForm.systemPrompt}
+                  onChange={e => setAgentForm({ ...agentForm, systemPrompt: e.target.value })}
+                  placeholder="You are an AI assistant for ForgeGrowth CRM. Speak concisely and naturally."
+                />
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={agentForm.isDefault}
+                  onChange={e => setAgentForm({ ...agentForm, isDefault: e.target.checked })}
+                />
+                Make default agent for all calls
+              </label>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
+              <button onClick={() => setShowAgentModal(false)} style={{ padding: '8px 16px', background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, cursor: 'pointer' }}>Cancel</button>
+              <button onClick={saveAgent} style={{ padding: '8px 18px', background: C.primary, border: 'none', borderRadius: 8, color: '#fff', fontWeight: 600, cursor: 'pointer' }}>Save Agent</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dialer Modal */}
+      <VoiceCallModal
+        isOpen={showDialer}
+        onClose={() => { setShowDialer(false); refreshAll(); }}
+        initialPhone={dialPhone}
+      />
+    </div>
+  );
+}
+
 /*  Main Page                                                          */
 /* ------------------------------------------------------------------ */
 export default function AdminSettingsPage({ onLogout, onNavigate, subParts = [], navigate, user }) {
@@ -1656,6 +2146,7 @@ export default function AdminSettingsPage({ onLogout, onNavigate, subParts = [],
       case 'fields': return <FieldsTab />;
       case 'funnel': return <FunnelSettingsTab navigate={navigate} />;
       case 'whatsapp-accounts': return <WhatsappAccountsTab />;
+      case 'voice-calling': return <VoiceCallingTab />;
       case 'ai-models': return <AIModelsTab navigate={navigate} />;
       case 'integrations': return <IntegrationsTab />;
       case 'mcp': return <McpToolsTab />;
