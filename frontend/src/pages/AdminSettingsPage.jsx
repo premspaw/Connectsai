@@ -3,7 +3,7 @@ import { notify, showError, showSuccess } from '../lib/feedback.js';
 import {
   Settings, Users, Tag, FolderOpen, LayoutList,
   LogOut, Trash2, Moon, Sun, Monitor,
-  ArrowLeft, Plus, X, ChevronLeft, Eye, EyeOff, Phone, Mail, MapPin, BadgeCheck, User,
+  ArrowLeft, Plus, X, ChevronLeft, Eye, EyeOff, Phone, PhoneCall, Mail, MapPin, BadgeCheck, User,
   Loader2, MessageSquare, Star, Key, Webhook, RefreshCw, Search, Play, AlertCircle, CheckCircle2,
   Bot, Copy, Check, Plug, Globe, Calendar as CalendarIcon, FileSpreadsheet, Link2, Unplug,
   ChevronRight, ExternalLink, Sheet, Table2, Inbox, PlugZap, Terminal,
