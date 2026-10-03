@@ -82,5 +82,7 @@ ForgeCRM_LLD.html
 
 # Local stack state
 .env
+gcp-service-account.json
+*.json.key
 ngrok.cmd
 ngrok.ps1
