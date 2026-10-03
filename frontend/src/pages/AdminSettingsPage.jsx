@@ -6,7 +6,7 @@ import {
   ArrowLeft, Plus, X, ChevronLeft, Eye, EyeOff, Phone, PhoneCall, Mail, MapPin, BadgeCheck, User,
   Loader2, MessageSquare, Star, Key, Webhook, RefreshCw, Search, Play, AlertCircle, CheckCircle2,
   Bot, Copy, Check, Plug, Globe, Calendar as CalendarIcon, FileSpreadsheet, Link2, Unplug,
-  ChevronRight, ExternalLink, Sheet, Table2, Inbox, PlugZap, Terminal,
+  ChevronRight, ExternalLink, Sheet, Table2, Inbox, PlugZap, Terminal, BookOpen, FileText, Edit2,
   IndianRupee, CreditCard, Link as LinkIcon, SlidersHorizontal,
   ChevronDown, Wrench, ShieldAlert, Package, Download, Shield,
 } from 'lucide-react';
@@ -29,6 +29,7 @@ const TABS = [
   { key: 'fields', label: 'Fields', icon: LayoutList },
   { key: 'funnel', label: 'Funnel', icon: SlidersHorizontal },
   { key: 'whatsapp-accounts', label: 'WhatsApp Accounts', icon: MessageSquare },
+  { key: 'knowledge-base', label: 'Knowledge Base', icon: BookOpen },
   { key: 'voice-calling', label: 'AI Voice Calling', icon: Phone },
   { key: 'ai-models', label: 'AI Models', icon: Bot },
   { key: 'integrations', label: 'Integrations', icon: Plug },
@@ -2058,6 +2059,347 @@ function VoiceCallingTab() {
   );
 }
 
+// ─── Knowledge Base Tab ─────────────────────────────────────────────────────
+// Grounding repository for WhatsApp AI Chatbots and Gemini Live Voice Agents.
+function KnowledgeBaseTab() {
+  const [docs, setDocs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [showModal, setShowModal] = useState(false);
+  const [editingDoc, setEditingDoc] = useState(null);
+  const [form, setForm] = useState({ title: '', category: 'general', content: '', is_active: true });
+  const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  const refresh = async () => {
+    setLoading(true);
+    try {
+      const res = await api.knowledgeBase.list();
+      setDocs(Array.isArray(res) ? res : []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { refresh(); }, []);
+
+  const openNew = () => {
+    setEditingDoc(null);
+    setForm({ title: '', category: 'general', content: '', is_active: true });
+    setShowModal(true);
+  };
+
+  const openEdit = (doc) => {
+    setEditingDoc(doc);
+    setForm({
+      title: doc.title,
+      category: doc.category || 'general',
+      content: doc.content,
+      is_active: doc.is_active !== false,
+    });
+    setShowModal(true);
+  };
+
+  const handleSave = async (e) => {
+    if (e) e.preventDefault();
+    if (!form.title.trim() || !form.content.trim()) {
+      showError('Title and content are required');
+      return;
+    }
+    setSaving(true);
+    try {
+      if (editingDoc) {
+        await api.knowledgeBase.update(editingDoc.id, form);
+        showSuccess('Knowledge base article updated');
+      } else {
+        await api.knowledgeBase.create(form);
+        showSuccess('Knowledge base article created');
+      }
+      setShowModal(false);
+      refresh();
+    } catch (err) {
+      showError(err.message || 'Failed to save article');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await api.knowledgeBase.delete(deleteTarget.id);
+      showSuccess('Article deleted');
+      setDeleteTarget(null);
+      refresh();
+    } catch (err) {
+      showError(err.message || 'Failed to delete');
+    }
+  };
+
+  const filteredDocs = useMemo(() => {
+    return docs.filter(d => {
+      const matchesSearch = !search || d.title.toLowerCase().includes(search.toLowerCase()) || d.content.toLowerCase().includes(search.toLowerCase());
+      const matchesCategory = categoryFilter === 'all' || d.category === categoryFilter;
+      return matchesSearch && matchesCategory;
+    });
+  }, [docs, search, categoryFilter]);
+
+  const categories = ['all', 'general', 'support', 'pricing', 'products', 'policies'];
+
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', padding: 28, fontFamily: FONT, color: C.text }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <BookOpen size={22} color={C.primary} /> Knowledge Base & Grounding Facts
+          </h2>
+          <div style={{ fontSize: 14, color: C.textSecondary, marginTop: 4 }}>
+            Verified business facts, pricing, FAQs, and policies that strictly ground WhatsApp AI bots and Gemini Live voice calls.
+          </div>
+        </div>
+        <button
+          onClick={openNew}
+          style={{
+            padding: '10px 18px', background: C.primary, border: 'none', borderRadius: 8,
+            color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8
+          }}
+        >
+          <Plus size={16} /> Add Knowledge Document
+        </button>
+      </div>
+
+      {/* Info Banner */}
+      <div style={{
+        background: 'rgba(0, 168, 132, 0.08)', border: '1px solid rgba(0, 168, 132, 0.25)',
+        borderRadius: 10, padding: '14px 18px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12
+      }}>
+        <CheckCircle2 size={20} color="#00A884" style={{ flexShrink: 0 }} />
+        <div style={{ fontSize: 13, color: C.text, lineHeight: 1.5 }}>
+          <strong>Zero Hallucination Grounding:</strong> Any document saved here is automatically loaded by the AI Chatbot and Gemini Live voice agents as verified ground truth. The AI will strictly speak from these facts.
+        </div>
+      </div>
+
+      {/* Filter & Search Bar */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: 260 }}>
+          <Search size={16} color={C.textMuted} style={{ position: 'absolute', left: 12, top: 12 }} />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search knowledge documents or FAQs..."
+            style={{
+              width: '100%', padding: '10px 12px 10px 38px', background: 'var(--c-inputBg)',
+              border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 14, boxSizing: 'border-box'
+            }}
+          />
+        </div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {categories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setCategoryFilter(cat)}
+              style={{
+                padding: '8px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+                border: categoryFilter === cat ? `1px solid ${C.primary}` : `1px solid ${C.border}`,
+                background: categoryFilter === cat ? 'rgba(0,168,132,0.15)' : 'transparent',
+                color: categoryFilter === cat ? C.primary : C.textSecondary,
+                cursor: 'pointer', textTransform: 'capitalize'
+              }}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Documents Grid */}
+      {loading ? (
+        <div style={{ padding: 40, textAlign: 'center', color: C.textMuted }}>Loading Knowledge Base…</div>
+      ) : filteredDocs.length === 0 ? (
+        <div style={{
+          padding: 48, textAlign: 'center', background: 'var(--c-cardBg)',
+          border: `1px dashed ${C.border}`, borderRadius: 12, color: C.textMuted
+        }}>
+          <BookOpen size={32} color={C.textMuted} style={{ marginBottom: 12 }} />
+          <div style={{ fontSize: 16, fontWeight: 600, color: C.text, marginBottom: 6 }}>No Knowledge Documents Found</div>
+          <div style={{ fontSize: 14, marginBottom: 16 }}>Add your company FAQ, services, pricing, or product details to ground your AI agents.</div>
+          <button
+            onClick={openNew}
+            style={{ padding: '8px 16px', background: C.primary, color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}
+          >
+            Create First Document
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 16 }}>
+          {filteredDocs.map(doc => (
+            <div
+              key={doc.id}
+              style={{
+                background: 'var(--c-cardBg)', border: `1px solid ${C.border}`,
+                borderRadius: 12, padding: 18, display: 'flex', flexDirection: 'column',
+                justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: C.text }}>{doc.title}</div>
+                  <span style={{
+                    fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 12,
+                    background: doc.is_active ? 'rgba(0,168,132,0.15)' : 'rgba(255,255,255,0.06)',
+                    color: doc.is_active ? '#00A884' : C.textMuted, textTransform: 'uppercase'
+                  }}>
+                    {doc.is_active ? 'ACTIVE' : 'INACTIVE'}
+                  </span>
+                </div>
+                <div style={{ marginBottom: 10 }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 6, background: 'rgba(255,255,255,0.06)', color: C.textSecondary, textTransform: 'uppercase' }}>
+                    {doc.category || 'general'}
+                  </span>
+                </div>
+                <div style={{
+                  fontSize: 13, color: C.textSecondary, lineHeight: 1.5,
+                  maxHeight: 120, overflow: 'hidden', textOverflow: 'ellipsis',
+                  background: 'var(--c-surface, rgba(0,0,0,0.1))', padding: 10, borderRadius: 8, whiteSpace: 'pre-wrap'
+                }}>
+                  {doc.content}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+                <span style={{ fontSize: 12, color: C.textMuted }}>
+                  {doc.content.split(/\s+/).length} words
+                </span>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    onClick={() => openEdit(doc)}
+                    style={{ padding: '6px 12px', background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 6, color: C.text, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                  >
+                    <Edit2 size={12} /> Edit
+                  </button>
+                  <button
+                    onClick={() => setDeleteTarget(doc)}
+                    style={{ padding: '6px 10px', background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 6, color: '#ef4444', fontSize: 12, cursor: 'pointer' }}
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add / Edit Modal */}
+      {showModal && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20
+        }}>
+          <div style={{
+            background: 'var(--c-cardBg)', border: `1px solid ${C.border}`, borderRadius: 14,
+            width: '100%', maxWidth: 640, overflow: 'hidden', boxShadow: '0 12px 32px rgba(0,0,0,0.4)'
+          }}>
+            <div style={{ padding: '18px 24px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>
+                {editingDoc ? 'Edit Knowledge Document' : 'New Knowledge Document'}
+              </h3>
+              <button onClick={() => setShowModal(false)} style={{ background: 'transparent', border: 'none', color: C.textMuted, cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSave} style={{ padding: 24 }}>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.textSecondary, marginBottom: 6 }}>DOCUMENT TITLE</label>
+                <input
+                  required
+                  value={form.title}
+                  onChange={e => setForm({ ...form, title: e.target.value })}
+                  placeholder="e.g. Pricing Plans & Refund Policy"
+                  style={{ width: '100%', padding: '10px 12px', background: 'var(--c-inputBg)', border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 14, boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.textSecondary, marginBottom: 6 }}>CATEGORY</label>
+                  <select
+                    value={form.category}
+                    onChange={e => setForm({ ...form, category: e.target.value })}
+                    style={{ width: '100%', padding: '10px 12px', background: 'var(--c-inputBg)', border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 14, boxSizing: 'border-box' }}
+                  >
+                    <option value="general">General Overview</option>
+                    <option value="support">Customer Support</option>
+                    <option value="pricing">Pricing & Billing</option>
+                    <option value="products">Products & Services</option>
+                    <option value="policies">Policies & Terms</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.textSecondary, marginBottom: 6 }}>STATUS</label>
+                  <select
+                    value={form.is_active ? 'active' : 'inactive'}
+                    onChange={e => setForm({ ...form, is_active: e.target.value === 'active' })}
+                    style={{ width: '100%', padding: '10px 12px', background: 'var(--c-inputBg)', border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 14, boxSizing: 'border-box' }}
+                  >
+                    <option value="active">Active (Grounding Enabled)</option>
+                    <option value="inactive">Draft / Inactive</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.textSecondary, marginBottom: 6 }}>
+                  KNOWLEDGE CONTENT (FACTS, QA, DETAILS)
+                </label>
+                <textarea
+                  required
+                  rows={8}
+                  value={form.content}
+                  onChange={e => setForm({ ...form, content: e.target.value })}
+                  placeholder="Paste facts, FAQs, product catalogs, prices, and rules the AI must follow when answering customers..."
+                  style={{ width: '100%', padding: '10px 12px', background: 'var(--c-inputBg)', border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 13, lineHeight: 1.5, boxSizing: 'border-box', fontFamily: FONT }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  style={{ padding: '9px 18px', background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  style={{ padding: '9px 22px', background: C.primary, border: 'none', borderRadius: 8, color: '#fff', fontWeight: 600, cursor: saving ? 'wait' : 'pointer' }}
+                >
+                  {saving ? 'Saving…' : 'Save Document'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        itemName={deleteTarget?.title || ''}
+        itemType="Knowledge document"
+      />
+    </div>
+  );
+}
+
 /*  Main Page                                                          */
 /* ------------------------------------------------------------------ */
 export default function AdminSettingsPage({ onLogout, onNavigate, subParts = [], navigate, user }) {
@@ -2146,6 +2488,7 @@ export default function AdminSettingsPage({ onLogout, onNavigate, subParts = [],
       case 'fields': return <FieldsTab />;
       case 'funnel': return <FunnelSettingsTab navigate={navigate} />;
       case 'whatsapp-accounts': return <WhatsappAccountsTab />;
+      case 'knowledge-base': return <KnowledgeBaseTab />;
       case 'voice-calling': return <VoiceCallingTab />;
       case 'ai-models': return <AIModelsTab navigate={navigate} />;
       case 'integrations': return <IntegrationsTab />;
@@ -4166,7 +4509,7 @@ function McpToolsTab() {
               <div style={{ fontSize: 14, color: C.textSecondary, marginTop: 2, lineHeight: 1.45 }}>{a.desc}</div>
             </div>
             <Toggle
-              checked={!!settings.capabilities[a.key]}
+              checked={!!settings?.capabilities?.[a.key]}
               disabled={!master || savingCap}
               onChange={(v) => saveSettings({ capabilities: { [a.key]: v } })}
             />

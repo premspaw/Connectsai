@@ -75,10 +75,23 @@ class GeminiLiveSession {
       wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${apiKey}`;
     }
 
+    let kbContext = '';
+    try {
+      const { rows } = await pool.query(
+        'SELECT title, content FROM coexistence.knowledge_bases WHERE is_active = TRUE ORDER BY id ASC'
+      );
+      if (rows.length > 0) {
+        kbContext = '\n\n=== VERIFIED COMPANY KNOWLEDGE BASE ===\n' +
+          rows.map(r => `--- ${r.title} ---\n${r.content}`).join('\n\n') +
+          '\n\nSTRICT INSTRUCTION: Speak naturally in short spoken sentences. Ground your answers strictly in the Verified Knowledge Base above. Never invent facts.';
+      }
+    } catch (e) {}
+
     const modelName = this.agent.gemini_model || process.env.GEMINI_LIVE_MODEL || 'gemini-2.5-flash';
     const voiceName = this.agent.voice_name || 'Aoede';
-    const systemPrompt = this.agent.system_prompt || 
+    const basePrompt = this.agent.system_prompt || 
       'You are a friendly, concise AI phone agent for Connects AI CRM. Speak in natural conversational tones without markdown or bullet points.';
+    const systemPrompt = `${basePrompt}${kbContext}`;
 
     this.ws = new WebSocket(wsUrl, wsOptions);
 

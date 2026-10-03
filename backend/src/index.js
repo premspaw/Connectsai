@@ -68,6 +68,7 @@ const { router: messageCostsRouter, ensureCostTables } = require('./routes/messa
 // VoiceLink AI Phone Calling & Gemini Live Voice Agents
 const { router: voiceCallsRouter, publicRouter: voiceCallsPublicRouter, ensureVoiceTables } = require('./routes/voiceCalls');
 const { initVoiceWebsocketServer } = require('./routes/voiceWebsocket');
+const knowledgeBaseRouter = require('./routes/knowledgeBase');
 const { startWorker: startMediaWorker, shutdown: shutdownMediaQueue } = require('./queue/mediaQueue');
 const { startSendWorker, shutdownSendQueue } = require('./queue/sendQueue');
 const { startAgentWorker, shutdownAgentQueue } = require('./queue/agentQueue');
@@ -247,6 +248,7 @@ app.use('/api', authMiddleware, integrationsRouter);
 app.use('/api', authMiddleware, agentsRouter);
 app.use('/api', authMiddleware, agentConversationRouter);
 app.use('/api', authMiddleware, voiceCallsRouter);
+app.use('/api', authMiddleware, knowledgeBaseRouter);
 app.use('/api', authMiddleware, mcpAdminRouter);
 app.use('/api', authMiddleware, mcpOAuthAdminRouter);
 

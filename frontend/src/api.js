@@ -848,6 +848,13 @@ export const api = {
     listCalls: (params = {}) => req(`/voice/calls${qs(params)}`),
     getCall: (id) => req(`/voice/calls/${id}`),
   },
+  // ── Knowledge Base (Grounding for WhatsApp AI Chatbots & Voice Agents) ─────
+  knowledgeBase: {
+    list: () => req('/knowledge-bases'),
+    create: (data) => req('/knowledge-bases', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => req(`/knowledge-bases/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => req(`/knowledge-bases/${id}`, { method: 'DELETE' }),
+  },
 };
 
 export default api;

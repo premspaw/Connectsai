@@ -10,7 +10,7 @@
 const pool = require('../db');
 const { asLimit, WINDOW_UNITS } = require('./agentLimits');
 
-const SUPPORTED_PROVIDERS = new Set(['anthropic', 'openai']);
+const SUPPORTED_PROVIDERS = new Set(['anthropic', 'openai', 'gemini', 'vertex']);
 
 // Lightweight typed error so routers can map status → HTTP code.
 class ApiError extends Error {

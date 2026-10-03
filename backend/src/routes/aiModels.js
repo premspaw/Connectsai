@@ -16,6 +16,8 @@ const router = Router();
 // Order matters: first match is treated as the recommended default.
 const DEFAULT_ENABLED = {
   openai: ['gpt-4o-mini', 'gpt-3.5-turbo', 'gpt-5'],
+  gemini: ['gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-3.8-flash', 'gemini-2.5-pro'],
+  vertex: ['gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-3.8-flash', 'gemini-2.5-pro'],
 };
 
 // Build the dynamic WHERE clause + params array for activity queries.
