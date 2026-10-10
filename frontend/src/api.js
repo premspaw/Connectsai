@@ -21,7 +21,12 @@ async function req(path, opts = {}) {
   }
 
   if (!res.ok) {
-    if (res.status === 500 || res.status === 401) {
+    if (path === '/auth/me' && res.status === 401) {
+      const e = new Error('Unauthorized');
+      e.status = 401;
+      throw e;
+    }
+    if (res.status === 500) {
       let bodyObj = null;
       try { if (opts.body) bodyObj = JSON.parse(opts.body); } catch {}
       return getMockResponse(path, opts.method || 'GET', bodyObj);
