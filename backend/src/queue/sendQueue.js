@@ -191,11 +191,21 @@ async function enqueueSend(jobData, opts = {}) {
     removeOnComplete: { count: 500, age: 3600 },
     removeOnFail: { count: 1000, age: 86400 },
   };
-  // Optional delayed delivery (used by automation Delay nodes so a later message
-  // lands after an earlier one). BullMQ holds the job for `delayMs` before a
-  // worker picks it up — non-blocking, no scheduler needed.
   if (opts.delayMs && opts.delayMs > 0) addOpts.delay = Math.round(opts.delayMs);
-  await sendQueue.add('send', jobData, addOpts);
+
+  try {
+    // Attempt BullMQ enqueue with 2s timeout
+    await Promise.race([
+      sendQueue.add('send', jobData, addOpts),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Redis enqueue timeout')), 2000)),
+    ]);
+  } catch (queueErr) {
+    console.warn(`[sendQueue] Queue add failed (${queueErr.message}), falling back to direct delivery`);
+    // Direct delivery fallback
+    processJob({ data: jobData }).catch(directErr => {
+      console.error(`[sendQueue] Direct send failed: ${directErr.message}`);
+    });
+  }
 }
 
 async function shutdownSendQueue() {
