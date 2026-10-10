@@ -1,14 +1,18 @@
 const { Pool } = require('pg');
 
 function buildPool() {
-  const connectionString = process.env.DATABASE_URL || process.env.SUPABASE_DATABASE_URL;
+  let connectionString = process.env.DATABASE_URL || process.env.SUPABASE_DATABASE_URL;
   if (connectionString) {
+    const isSsl = process.env.POSTGRES_SSL === 'true' || connectionString.includes('sslmode=require') || connectionString.includes('supabase');
+    connectionString = connectionString.replace(/[?&]sslmode=[^&]+/g, '');
     return new Pool({
       connectionString,
-      ssl: process.env.POSTGRES_SSL === 'true' ? { rejectUnauthorized: false } : false,
-      max: 20,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 5000,
+      ssl: isSsl ? { rejectUnauthorized: false } : false,
+      max: 15,
+      idleTimeoutMillis: 15000,
+      connectionTimeoutMillis: 15000,
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 10000,
       application_name: 'forgecrm-backend',
     });
   }

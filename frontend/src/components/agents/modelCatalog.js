@@ -5,9 +5,24 @@
 // supports Anthropic + OpenAI — the two providers the engine has tool-use
 // adapters for. Keep these model ids in sync with backend/src/llm/*.
 
-export const PROVIDER_LABELS = { anthropic: 'Anthropic Claude', openai: 'OpenAI' };
+export const PROVIDER_LABELS = { 
+  google: 'Google Cloud Vertex AI',
+  vertex: 'Google Cloud Vertex AI',
+  anthropic: 'Anthropic Claude', 
+  openai: 'OpenAI' 
+};
 
 export const MODEL_CATALOG = {
+  google: [
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Fastest, Low Latency - Active)' },
+    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (Advanced Reasoning)' },
+    { value: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash-Lite (Cloud Preview)' },
+  ],
+  vertex: [
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Fastest, Low Latency - Active)' },
+    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (Advanced Reasoning)' },
+    { value: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash-Lite (Cloud Preview)' },
+  ],
   anthropic: [
     { value: 'claude-opus-4-7', label: 'Claude Opus 4.7 (most capable)' },
     { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6 (balanced)' },

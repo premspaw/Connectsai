@@ -33,6 +33,19 @@
 
 const fs = require('fs');
 const path = require('path');
+const dotenv = require('dotenv');
+
+// Load environment variables if running outside Docker container
+const rootEnv = path.resolve(__dirname, '../../.env');
+const backendEnv = path.resolve(__dirname, '../.env');
+if (fs.existsSync(rootEnv)) {
+  dotenv.config({ path: rootEnv });
+} else if (fs.existsSync(backendEnv)) {
+  dotenv.config({ path: backendEnv });
+} else {
+  dotenv.config();
+}
+
 const { Client } = require('pg');
 
 // A constant, arbitrary key. Any other process using advisory locks on this
@@ -54,11 +67,14 @@ function clientConfig() {
   // Deliberately mirrors backend/src/db.js, including its POSTGRES_* / DB_*
   // dual-prefix rule. Diverging here would produce a container that migrates
   // one database and then serves another.
-  const connectionString = process.env.DATABASE_URL || process.env.SUPABASE_DATABASE_URL;
+  let connectionString = process.env.DATABASE_URL || process.env.SUPABASE_DATABASE_URL;
   if (connectionString) {
+    const isSsl = process.env.POSTGRES_SSL === 'true' || connectionString.includes('sslmode=require') || connectionString.includes('supabase');
+    connectionString = connectionString.replace(/[?&]sslmode=[^&]+/g, '');
     return {
       connectionString,
-      ssl: process.env.POSTGRES_SSL === 'true' ? { rejectUnauthorized: false } : false,
+      ssl: isSsl ? { rejectUnauthorized: false } : false,
+      connectionTimeoutMillis: 10000,
     };
   }
   const env = process.env;

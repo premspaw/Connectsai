@@ -977,9 +977,9 @@ function UnderstandingConfig({ form, setForm }) {
         icon={Mic}
         title="Voice notes"
         subtitle={form.transcribeAudio
-          ? 'Transcribed with OpenAI Whisper and handled like a typed message.'
-          : 'Off — a voice note gets no reply. Needs an OpenAI key in Integrations.'}
-        info="Incoming WhatsApp voice notes are transcribed to text with OpenAI Whisper and handled like a typed message. It reuses the OpenAI key from Integrations → AI Models, so connect one there first."
+          ? 'Gemini listens to the voice note natively and replies in text.'
+          : 'Off — a voice note gets no reply.'}
+        info="Incoming WhatsApp voice notes are sent as audio straight to Vertex AI Gemini, which understands them natively (English, Hindi, Kannada, Telugu and more) and replies in text."
         checked={form.transcribeAudio}
         onChange={(next) => setForm(f => ({ ...f, transcribeAudio: next }))}
       >
@@ -1002,9 +1002,9 @@ function UnderstandingConfig({ form, setForm }) {
         icon={ImagePlus}
         title="Images"
         subtitle={form.acceptImages
-          ? 'The agent sees the picture. Use a vision model (GPT-4o, Claude).'
+          ? 'Gemini sees the picture (and any caption) and replies about it.'
           : 'Off — a photo is ignored, though any caption on it still counts as text.'}
-        info="An incoming WhatsApp image is sent to the agent's model (with any caption) so it can see the picture. Use a vision-capable model such as GPT-4o or Claude. Every image adds tokens."
+        info="An incoming WhatsApp image is sent to Vertex AI Gemini (with any caption) so it can see the picture. All Gemini models are vision-capable. Every image adds tokens."
         checked={form.acceptImages}
         onChange={(next) => setForm(f => ({ ...f, acceptImages: next }))}
       >

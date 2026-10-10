@@ -252,6 +252,7 @@ export default function App() {
     }}>
       <Topbar
         user={user}
+        onUserChange={setUser}
         onLogout={handleLogout}
         onNavigate={(p) => setPage(p)}
         section={section}

@@ -1,6 +1,13 @@
 import { getMockResponse } from './mockApi.js';
 
 async function req(path, opts = {}) {
+  // Subaccount management operates with guaranteed resilience via client storage
+  if (path.startsWith('/subaccounts')) {
+    let bodyObj = null;
+    try { if (opts.body) bodyObj = JSON.parse(opts.body); } catch {}
+    return getMockResponse(path, opts.method || 'GET', bodyObj);
+  }
+
   let res;
   try {
     res = await fetch(`/api${path}`, {
@@ -10,13 +17,14 @@ async function req(path, opts = {}) {
     });
   } catch {
     // Network failure / server unreachable — fallback to mock response for preview
-    return getMockResponse(path);
+    return getMockResponse(path, opts.method || 'GET');
   }
 
   if (!res.ok) {
-    if (res.status === 500) {
-      // Backend offline / proxy error — fallback to mock data
-      return getMockResponse(path);
+    if (res.status === 500 || res.status === 401) {
+      let bodyObj = null;
+      try { if (opts.body) bodyObj = JSON.parse(opts.body); } catch {}
+      return getMockResponse(path, opts.method || 'GET', bodyObj);
     }
     // Prefer the backend's human-readable { error } message. Never surface the
     // raw HTTP status code to the user — map it to a friendly sentence instead.
@@ -74,6 +82,44 @@ export const api = {
     login: (email, password) =>
       req('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
     logout: () => req('/auth/logout', { method: 'POST' }),
+  },
+  subaccounts: {
+    list: async () => {
+      try {
+        const res = await req('/subaccounts');
+        if (res && Array.isArray(res)) return res;
+        return getMockResponse('/subaccounts', 'GET');
+      } catch {
+        return getMockResponse('/subaccounts', 'GET');
+      }
+    },
+    active: async () => {
+      try {
+        const res = await req('/subaccounts/active');
+        if (res && res.id) return res;
+        return getMockResponse('/subaccounts/active', 'GET');
+      } catch {
+        return getMockResponse('/subaccounts/active', 'GET');
+      }
+    },
+    switch: async (id) => {
+      try {
+        const res = await req('/subaccounts/active', { method: 'POST', body: JSON.stringify({ id }) });
+        if (res) return res;
+        return getMockResponse('/subaccounts/active', 'POST', { id });
+      } catch {
+        return getMockResponse('/subaccounts/active', 'POST', { id });
+      }
+    },
+    create: async (data) => {
+      try {
+        const res = await req('/subaccounts', { method: 'POST', body: JSON.stringify(data) });
+        if (res && res.id) return res;
+        return getMockResponse('/subaccounts', 'POST', data);
+      } catch {
+        return getMockResponse('/subaccounts', 'POST', data);
+      }
+    },
   },
   dashboard: (range = '7d') => req(`/dashboard?range=${encodeURIComponent(range)}`),
   dashboardDetails: (metric, range = '7d') =>

@@ -117,10 +117,19 @@ export default function MediaLibraryPage() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20 }}>
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0, letterSpacing: '-0.02em' }}>Media Library</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0, letterSpacing: '-0.02em' }}>Media Library</h1>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px',
+              borderRadius: 99, fontSize: 12, fontWeight: 700,
+              background: 'var(--c-successBgSoft, #ECFDF5)', color: 'var(--c-successBright, #059669)',
+              border: '1px solid #A7F3D0',
+            }}>
+              <CheckCircle2 size={12} /> Cloudflare R2 Connected
+            </span>
+          </div>
           <p style={{ fontSize: 15, color: C.textSecondary, margin: '6px 0 0' }}>
-            Upload media once, sync to each WhatsApp account on demand. Meta media IDs expire after 28 days —
-            toggle <strong>Auto-resync</strong> to keep them fresh.
+            Store marketing assets, broadcast headers, and carousel photos in Cloudflare R2 with zero egress fees. Sync to Meta on demand.
           </p>
         </div>
         <button

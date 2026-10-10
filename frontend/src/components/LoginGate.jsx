@@ -348,55 +348,163 @@ export default function LoginGate({ onLogin }) {
               <div style={{ flex: 1, height: 1, background: C.border }} />
             </div>
 
-            <button
-              type="button"
-              onClick={() => onLogin({
-                id: 1,
-                username: 'admin',
-                email: 'admin@example.com',
-                displayName: 'Admin User',
-                role: 'admin',
-                isActive: true,
-                permissions: null,
-                pages: [
-                  'home', 'chatbot-builder', 'template-builder', 'chats',
-                  'bulk-message', 'admin-settings', 'media-library', 'wa-links',
-                  'pipelines', 'ai-agent-builder', 'lead-forms', 'projects',
-                  'mkt-overview', 'campaigns', 'ctwa-ads', 'conversion-api',
-                  'sales-pipeline', 'leads', 'payments', 'onboarding',
-                  'sales-funnel', 'message-costs'
-                ],
-                assignedWaNumbers: [],
-              })}
-              style={{
-                width: '100%',
-                padding: '11px',
-                borderRadius: 10,
-                border: `1.5px solid ${C.border}`,
-                background: C.cardBg,
-                color: C.text,
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                fontFamily: FONT,
-                transition: 'all .15s',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor = C.purple;
-                e.currentTarget.style.color = C.purple;
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = C.border;
-                e.currentTarget.style.color = C.text;
-              }}
-            >
-              <Shield size={16} />
-              Bypass Sign In (Explore Demo Mode)
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button
+                type="button"
+                onClick={async () => {
+                  setLoading(true);
+                  try {
+                    const res = await api.auth.login('premspaw@gmail.com', 'AdminConnectsAI2026!');
+                    await api.subaccounts.switch('ACCT-001').catch(() => {});
+                    onLogin(res?.user || {
+                      id: 1,
+                      username: 'premspaw',
+                      email: 'premspaw@gmail.com',
+                      displayName: 'Prem Spawar',
+                      role: 'admin',
+                      accountId: 'ACCT-001',
+                      accountName: 'Prem Spawar (ConnectsAI Main)',
+                      accountType: 'Agency Master',
+                      pages: [
+                        'home', 'chatbot-builder', 'template-builder', 'chats',
+                        'bulk-message', 'admin-settings', 'media-library', 'wa-links',
+                        'pipelines', 'ai-agent-builder', 'lead-forms', 'projects',
+                        'mkt-overview', 'campaigns', 'ctwa-ads', 'conversion-api',
+                        'sales-pipeline', 'leads', 'payments', 'onboarding',
+                        'sales-funnel', 'message-costs'
+                      ],
+                      assignedWaNumbers: ['918660395136'],
+                    });
+                  } catch {
+                    await api.subaccounts.switch('ACCT-001').catch(() => {});
+                    onLogin({
+                      id: 1,
+                      username: 'premspaw',
+                      email: 'premspaw@gmail.com',
+                      displayName: 'Prem Spawar',
+                      role: 'admin',
+                      accountId: 'ACCT-001',
+                      accountName: 'Prem Spawar (ConnectsAI Main)',
+                      accountType: 'Agency Master',
+                      pages: [
+                        'home', 'chatbot-builder', 'template-builder', 'chats',
+                        'bulk-message', 'admin-settings', 'media-library', 'wa-links',
+                        'pipelines', 'ai-agent-builder', 'lead-forms', 'projects',
+                        'mkt-overview', 'campaigns', 'ctwa-ads', 'conversion-api',
+                        'sales-pipeline', 'leads', 'payments', 'onboarding',
+                        'sales-funnel', 'message-costs'
+                      ],
+                      assignedWaNumbers: ['918660395136'],
+                    });
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  padding: '11px 14px',
+                  borderRadius: 10,
+                  border: '1.5px solid #6366f1',
+                  background: 'rgba(99, 102, 241, 0.08)',
+                  color: C.text,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  fontFamily: FONT,
+                  transition: 'all .15s',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 16 }}>👑</span>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontWeight: 700, fontSize: 13 }}>Prem Spawar (Main Admin)</div>
+                    <div style={{ fontSize: 11, color: C.textMuted }}>ACCT-001 • Master Account</div>
+                  </div>
+                </div>
+                <span style={{ fontSize: 12, color: '#6366f1', fontWeight: 700 }}>Open →</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  setLoading(true);
+                  try {
+                    const res = await api.auth.login('admin@dermasculpt.com', 'DermaSculptAdmin2026!');
+                    await api.subaccounts.switch('ACCT-002').catch(() => {});
+                    onLogin(res?.user || {
+                      id: 2,
+                      username: 'dermasculpt',
+                      email: 'admin@dermasculpt.com',
+                      displayName: 'DermaSculpt Clinic',
+                      role: 'admin',
+                      accountId: 'ACCT-002',
+                      accountName: 'DermaSculpt Clinic',
+                      accountType: 'Client Subaccount',
+                      pages: [
+                        'home', 'chatbot-builder', 'template-builder', 'chats',
+                        'bulk-message', 'admin-settings', 'media-library', 'wa-links',
+                        'pipelines', 'ai-agent-builder', 'lead-forms', 'projects',
+                        'mkt-overview', 'campaigns', 'ctwa-ads', 'conversion-api',
+                        'sales-pipeline', 'leads', 'payments', 'onboarding',
+                        'sales-funnel', 'message-costs'
+                      ],
+                      assignedWaNumbers: ['919876543210'],
+                    });
+                  } catch {
+                    await api.subaccounts.switch('ACCT-002').catch(() => {});
+                    onLogin({
+                      id: 2,
+                      username: 'dermasculpt',
+                      email: 'admin@dermasculpt.com',
+                      displayName: 'DermaSculpt Clinic',
+                      role: 'admin',
+                      accountId: 'ACCT-002',
+                      accountName: 'DermaSculpt Clinic',
+                      accountType: 'Client Subaccount',
+                      pages: [
+                        'home', 'chatbot-builder', 'template-builder', 'chats',
+                        'bulk-message', 'admin-settings', 'media-library', 'wa-links',
+                        'pipelines', 'ai-agent-builder', 'lead-forms', 'projects',
+                        'mkt-overview', 'campaigns', 'ctwa-ads', 'conversion-api',
+                        'sales-pipeline', 'leads', 'payments', 'onboarding',
+                        'sales-funnel', 'message-costs'
+                      ],
+                      assignedWaNumbers: ['919876543210'],
+                    });
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  padding: '11px 14px',
+                  borderRadius: 10,
+                  border: '1.5px solid #10b981',
+                  background: 'rgba(16, 185, 129, 0.08)',
+                  color: C.text,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  fontFamily: FONT,
+                  transition: 'all .15s',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 16 }}>🏥</span>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontWeight: 700, fontSize: 13 }}>DermaSculpt Clinic (Subaccount)</div>
+                    <div style={{ fontSize: 11, color: C.textMuted }}>ACCT-002 • Client Portal Replica</div>
+                  </div>
+                </div>
+                <span style={{ fontSize: 12, color: '#10b981', fontWeight: 700 }}>Open →</span>
+              </button>
+            </div>
           </form>
         </div>
       </div>

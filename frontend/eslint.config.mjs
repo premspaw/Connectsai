@@ -87,7 +87,7 @@ export default [
     },
   },
   {
-    files: ['e2e/**/*.js', 'vite.config*.js', 'vitest.config.js'],
+    files: ['e2e/**/*.js', 'server/**/*.js', 'vite.config*.js', 'vitest.config.js'],
     languageOptions: {
       globals: { ...globals.node },
     },

@@ -21,9 +21,7 @@
 .git
 .github
 
-# Frontend sources — the backend image does not build the UI. Its own image has
-# its own context (./frontend) and therefore its own .dockerignore.
-frontend
+
 
 # Local artefacts
 **/dist

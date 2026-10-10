@@ -1,5 +1,7 @@
 require('dotenv').config();
 
+const path = require('path');
+const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -28,6 +30,7 @@ const minioClient = require('./util/minioClient');
 const { router: whatsappAccountsRouter } = require('./routes/whatsappAccounts');
 const { router: aiModelsRouter } = require('./routes/aiModels');
 const { router: usersRouter } = require('./routes/users');
+const subaccountsRouter = require('./routes/subaccounts');
 const roleConfig = require('./services/roleConfig');
 const { router: eventsRouter } = require('./routes/events');
 const { router: webhookHistoryRouter } = require('./routes/webhookHistory');
@@ -209,6 +212,7 @@ app.all('/api/mcp/http/:key', mcpHttpHandler);
 
 // Auth routes (public)
 app.use('/api', authRouter);
+app.use('/api', subaccountsRouter);
 
 // Protected routes
 app.use('/api', authMiddleware, messagesRouter);
@@ -251,6 +255,16 @@ app.use('/api', authMiddleware, voiceCallsRouter);
 app.use('/api', authMiddleware, knowledgeBaseRouter);
 app.use('/api', authMiddleware, mcpAdminRouter);
 app.use('/api', authMiddleware, mcpOAuthAdminRouter);
+
+// Serve built React frontend in production
+const distPath = path.resolve(__dirname, '../../frontend/dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) return next();
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
 
 // Error handler
 app.use((err, req, res, next) => {
@@ -585,6 +599,14 @@ async function start() {
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT',  () => shutdown('SIGINT'));
 }
+
+process.on('unhandledRejection', (reason) => {
+  console.warn('[unhandledRejection]:', reason?.message || reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.warn('[uncaughtException]:', err?.message || err);
+});
 
 start().catch(err => {
   // Print the WHOLE error, not just .message. Several things thrown during

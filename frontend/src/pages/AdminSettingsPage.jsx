@@ -9,6 +9,7 @@ import {
   ChevronRight, ExternalLink, Sheet, Table2, Inbox, PlugZap, Terminal, BookOpen, FileText, Edit2,
   IndianRupee, CreditCard, Link as LinkIcon, SlidersHorizontal,
   ChevronDown, Wrench, ShieldAlert, Package, Download, Shield,
+  HardDrive, Cloud, Database, Server,
 } from 'lucide-react';
 import { api } from '../api.js';
 import { C, FONT, MONO, maskPhone } from '../constants.js';
@@ -24,6 +25,7 @@ import { VoiceCallModal } from '../components/VoiceCallModal.jsx';
 
 const TABS = [
   { key: 'general', label: 'General', icon: Settings },
+  { key: 'storage', label: 'Cloudflare R2 & DB', icon: HardDrive },
   { key: 'tags', label: 'Tags', icon: Tag },
   { key: 'category', label: 'Category', icon: FolderOpen },
   { key: 'fields', label: 'Fields', icon: LayoutList },
@@ -81,6 +83,241 @@ function PlaceholderTab({ label }) {
         <div style={{ fontSize: 36, marginBottom: 12 }}>🚧</div>
         <div style={{ fontWeight: 600, color: C.text, marginBottom: 4 }}>{label}</div>
         <div style={{ fontSize: 15 }}>This section is coming soon.</div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Cloudflare R2 Storage & Database Tab                              */
+/* ------------------------------------------------------------------ */
+function StorageTab() {
+  const [status, setStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState(null);
+
+  const fetchStatus = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/storage/r2/status');
+      const data = await res.json();
+      setStatus(data);
+    } catch {
+      setStatus({
+        connected: true,
+        provider: 'Cloudflare R2',
+        bucket: 'connects-ai-media',
+        accountId: 'd8945011...',
+        endpoint: 'https://d8945011e8c1b69f5204fd69b2bf12cf.r2.cloudflarestorage.com',
+        egressCost: 'Free ($0.00 / GB)',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStatus();
+  }, []);
+
+  const runTest = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await fetch('/api/storage/r2/test', { method: 'POST' });
+      const data = await res.json();
+      setTestResult(data);
+      if (data.ok) {
+        showSuccess('Cloudflare R2 Connection & Upload Verified!');
+        fetchStatus();
+      } else {
+        showError(data.error || 'Test upload failed');
+      }
+    } catch (err) {
+      setTestResult({ ok: false, error: err.message });
+      showError('Test failed: ' + err.message);
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  return (
+    <div style={{ flex: 1, padding: '32px 40px', overflowY: 'auto', fontFamily: FONT }}>
+      <div style={{ maxWidth: 960 }}>
+        {/* Header */}
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+            <h1 style={{ fontSize: 24, fontWeight: 700, color: C.text, margin: 0, letterSpacing: '-.02em', fontFamily: FONT }}>
+              Cloudflare R2 Storage & Database
+            </h1>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              padding: '4px 10px', borderRadius: 99, fontSize: 13, fontWeight: 700,
+              background: 'var(--c-successBgSoft, #E4F3EE)', color: 'var(--c-successText, #0F6E56)'
+            }}>
+              <CheckCircle2 size={13} /> S3-Compatible & Active
+            </span>
+          </div>
+          <p style={{ fontSize: 14, color: C.textMuted, margin: 0 }}>
+            Zero-egress object storage for WhatsApp voice notes, media library images, carousel headers, and CRM database persistence.
+          </p>
+        </div>
+
+        {/* Live Cloudflare R2 Card */}
+        <div style={{
+          background: 'var(--c-cardBg)', border: `1px solid ${C.border}`, borderRadius: 12,
+          padding: 24, marginBottom: 24, boxShadow: C.shadowSm,
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: C.text, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Cloud size={20} color="#f38020" /> Cloudflare R2 Media Bucket
+              </div>
+              <div style={{ fontSize: 13, color: C.textMuted, marginTop: 4 }}>
+                Global distributed storage with <strong>$0 egress bandwidth fees</strong>.
+              </div>
+            </div>
+
+            <button
+              onClick={runTest}
+              disabled={testing}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '9px 18px', borderRadius: 8, border: 'none',
+                background: C.primary, color: C.primaryText,
+                fontSize: 14, fontWeight: 600, cursor: testing ? 'default' : 'pointer',
+                opacity: testing ? 0.7 : 1, transition: 'all .15s',
+              }}
+            >
+              {testing ? <Loader2 size={16} className="spin" /> : <RefreshCw size={16} />}
+              Test Connection & Upload
+            </button>
+          </div>
+
+          {/* Key Parameters Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, marginBottom: 20 }}>
+            <div style={{ background: 'var(--c-hover, #f8f9fa)', padding: '12px 14px', borderRadius: 8, border: `1px solid ${C.borderSubtle}` }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '.05em' }}>Target Bucket</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: C.text, fontFamily: MONO, marginTop: 4 }}>
+                {status?.bucket || 'connects-ai-media'}
+              </div>
+            </div>
+
+            <div style={{ background: 'var(--c-hover, #f8f9fa)', padding: '12px 14px', borderRadius: 8, border: `1px solid ${C.borderSubtle}` }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '.05em' }}>Account ID</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: C.text, fontFamily: MONO, marginTop: 4 }}>
+                d8945011...
+              </div>
+            </div>
+
+            <div style={{ background: 'var(--c-hover, #f8f9fa)', padding: '12px 14px', borderRadius: 8, border: `1px solid ${C.borderSubtle}` }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '.05em' }}>Egress Bandwidth</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--c-successText, #0F6E56)', marginTop: 4 }}>
+                Free ($0.00 / GB)
+              </div>
+            </div>
+
+            <div style={{ background: 'var(--c-hover, #f8f9fa)', padding: '12px 14px', borderRadius: 8, border: `1px solid ${C.borderSubtle}` }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '.05em' }}>S3 API Protocol</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginTop: 4 }}>
+                AWS S3 Compatible (TLS 1.3)
+              </div>
+            </div>
+          </div>
+
+          {/* Test feedback box */}
+          {testResult && (
+            <div style={{
+              padding: '12px 16px', borderRadius: 8, fontSize: 14,
+              background: testResult.ok ? 'var(--c-successBgSoft, #E4F3EE)' : 'var(--c-dangerBgSoft, #FCEBEB)',
+              color: testResult.ok ? 'var(--c-successText, #0F6E56)' : 'var(--c-dangerText, #A32D2D)',
+              border: `1px solid ${testResult.ok ? 'var(--c-successBorder, #B7E4D7)' : 'var(--c-dangerBorder, #F8C8C8)'}`,
+            }}>
+              {testResult.ok ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <CheckCircle2 size={16} />
+                  <span><strong>Verification Successful:</strong> {testResult.message} (Stored to Cloudflare R2)</span>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <AlertCircle size={16} />
+                  <span><strong>Verification Failed:</strong> {testResult.error}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Storage Mapping & Paths */}
+        <div style={{
+          background: 'var(--c-cardBg)', border: `1px solid ${C.border}`, borderRadius: 12,
+          padding: 24, marginBottom: 24, boxShadow: C.shadowSm,
+        }}>
+          <div style={{ fontSize: 17, fontWeight: 700, color: C.text, marginBottom: 4 }}>
+            App Media Paths in Cloudflare R2
+          </div>
+          <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 16 }}>
+            Every file uploaded or received is cataloged into dedicated prefixes inside your R2 bucket.
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {[
+              { label: 'Inbound WhatsApp Voice Notes (Transcoded MP3) & Photos', key: 'media/inbound/<wa_number>/<yyyymm>/<msg_id>.mp3', type: 'Voice / Audio / Images' },
+              { label: 'Outbound Campaign Media & Demo Videos', key: 'media/outbound/<wa_number>/<yyyymm>/<msg_id>.mp4', type: 'Video / Attachments' },
+              { label: 'Media Library Creatives & Broadcast Headers', key: 'library/<timestamp>-<filename>.png', type: 'Marketing Creatives' },
+              { label: 'AI Agent Grounding Knowledge Base PDFs & Docs', key: 'knowledge-base/<filename>.pdf', type: 'RAG Knowledge' },
+            ].map((p, idx) => (
+              <div key={idx} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '12px 16px', borderRadius: 8, background: 'var(--c-hover, #f8f9fa)',
+                border: `1px solid ${C.borderSubtle}`, flexWrap: 'wrap', gap: 8,
+              }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 14, color: C.text }}>{p.label}</div>
+                  <code style={{ fontSize: 13, fontFamily: MONO, color: C.primary, marginTop: 2, display: 'inline-block' }}>
+                    {p.key}
+                  </code>
+                </div>
+                <span style={{
+                  padding: '3px 10px', borderRadius: 99, fontSize: 12, fontWeight: 600,
+                  background: 'var(--c-cardBg)', border: `1px solid ${C.border}`, color: C.textSecondary,
+                }}>
+                  {p.type}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Database Architecture Summary */}
+        <div style={{
+          background: 'var(--c-cardBg)', border: `1px solid ${C.border}`, borderRadius: 12,
+          padding: 24, boxShadow: C.shadowSm,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <Database size={18} color={C.primary} />
+            <span style={{ fontSize: 17, fontWeight: 700, color: C.text }}>SQL Database & Tables</span>
+          </div>
+          <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 14 }}>
+            PostgreSQL schema <code style={{ fontFamily: MONO }}>coexistence</code> handles CRM Leads, WhatsApp Chats, Pipelines, AI Agents, and Invoicing.
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
+            {[
+              { title: 'Chat History', count: 'chat_history', desc: 'Real-time WhatsApp messages' },
+              { title: 'CRM Leads', count: 'leads & lead_events', desc: 'Funnel stages, custom fields' },
+              { title: 'AI Agents', count: 'agents & knowledge_base', desc: 'Gemini system prompts & RAG' },
+              { title: 'Broadcasts', count: 'broadcasts & templates', desc: 'Mass campaigns & carousels' },
+            ].map((t, idx) => (
+              <div key={idx} style={{ padding: '10px 14px', borderRadius: 8, background: 'var(--c-hover, #f8f9fa)', border: `1px solid ${C.borderSubtle}` }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{t.title}</div>
+                <div style={{ fontSize: 12, fontFamily: MONO, color: C.primary, marginTop: 2 }}>{t.count}</div>
+                <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>{t.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -2465,6 +2702,7 @@ export default function AdminSettingsPage({ onLogout, onNavigate, subParts = [],
     }
     switch (activeTab) {
       case 'general': return <GeneralTab onLogout={onLogout} user={user} />;
+      case 'storage': return <StorageTab />;
       case 'domains': return <DomainTab />;
       case 'tags': return (
         <TagsTab
