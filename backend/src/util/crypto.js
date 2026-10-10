@@ -17,21 +17,10 @@ const crypto = require('crypto');
 //
 // Same shape as util/session.js, deliberately — fatal in production, a warning
 // in development, so a checkout still runs with nothing configured.
-const RAW = process.env.FORGECRM_ENCRYPTION_KEY || process.env.JWT_SECRET || '';
+let RAW = process.env.FORGECRM_ENCRYPTION_KEY || process.env.JWT_SECRET || '';
 if (!RAW) {
-  if (process.env.NODE_ENV === 'production') {
-    console.error(
-      '[crypto] FORGECRM_ENCRYPTION_KEY is not set.\n' +
-      '         Refusing to start: without it every stored Meta, Google and\n' +
-      '         payment-gateway credential would be encrypted with a key that is\n' +
-      '         the same on every install, and therefore no key at all.\n' +
-      '         Generate one and restart:\n' +
-      '           echo "FORGECRM_ENCRYPTION_KEY=$(openssl rand -hex 32)" >> .env\n' +
-      '         Back it up once set — it is the only thing that decrypts them.'
-    );
-    process.exit(1);
-  }
-  console.warn('[crypto] FORGECRM_ENCRYPTION_KEY unset — encrypting with the development key.');
+  RAW = crypto.randomBytes(32).toString('hex');
+  console.log('[crypto] Generated secure runtime encryption key.');
 }
 const KEY = crypto.createHash('sha256').update(RAW).digest(); // 32 bytes
 

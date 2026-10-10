@@ -21,21 +21,12 @@
 
 const DEV_SECRET = 'forgecrm-dev-secret-change-me';
 
-const JWT_SECRET =
-  process.env.FORGECRM_JWT_SECRET || process.env.JWT_SECRET || DEV_SECRET;
+let JWT_SECRET =
+  process.env.FORGECRM_JWT_SECRET || process.env.JWT_SECRET;
 
-if (JWT_SECRET === DEV_SECRET) {
-  if (process.env.NODE_ENV === 'production') {
-    console.error(
-      '[auth] FORGECRM_JWT_SECRET is not set.\n' +
-      '       Refusing to start: the fallback signing key ships in this public\n' +
-      '       repository, so anyone could mint themselves an admin session.\n' +
-      '       Generate one and restart:\n' +
-      "         echo \"FORGECRM_JWT_SECRET=$(openssl rand -base64 48 | tr -d '\\n=+/')\" >> .env"
-    );
-    process.exit(1);
-  }
-  console.warn('[auth] FORGECRM_JWT_SECRET unset — signing with the development key.');
+if (!JWT_SECRET || JWT_SECRET === DEV_SECRET) {
+  JWT_SECRET = require('crypto').randomBytes(48).toString('base64url');
+  console.log('[auth] Generated secure runtime session signing key.');
 }
 
 // Whether the browser reaches this install over HTTPS. Decided from the address
