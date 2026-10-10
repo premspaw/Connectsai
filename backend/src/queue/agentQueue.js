@@ -56,20 +56,28 @@ function startAgentWorker() {
  * over each other.
  */
 async function enqueueAgentRun({ agentId, contactNumber, inboundMessageId, inboundText, isTest = false }) {
-  await agentQueue.add(
-    'run',
-    // isTest travels WITH the job rather than being re-derived in the worker:
-    // the test-number list could be edited between enqueue and run, and a
-    // message must be handled under the rules that applied when it arrived.
-    { agentId, contactNumber, inboundMessageId, inboundText, isTest: !!isTest },
-    {
-      jobId: `agent-${agentId}-${contactNumber}-${inboundMessageId || Date.now()}`,
-      attempts: ATTEMPTS,
-      backoff: { type: 'exponential', delay: 2000 },
-      removeOnComplete: { count: 200, age: 3600 },
-      removeOnFail: { count: 500, age: 86400 },
-    },
-  );
+  const jobData = { agentId, contactNumber, inboundMessageId, inboundText, isTest: !!isTest };
+  try {
+    await Promise.race([
+      agentQueue.add(
+        'run',
+        jobData,
+        {
+          jobId: `agent-${agentId}-${contactNumber}-${inboundMessageId || Date.now()}`,
+          attempts: ATTEMPTS,
+          backoff: { type: 'exponential', delay: 2000 },
+          removeOnComplete: { count: 200, age: 3600 },
+          removeOnFail: { count: 500, age: 86400 },
+        },
+      ),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Redis timeout')), 2000)),
+    ]);
+  } catch (err) {
+    console.warn(`[agentQueue] Redis queue failed (${err.message}), running direct agent execution`);
+    processJob({ data: jobData }).catch(directErr => {
+      console.error(`[agentQueue] Direct agent run failed: ${directErr.message}`);
+    });
+  }
 }
 
 async function shutdownAgentQueue() {

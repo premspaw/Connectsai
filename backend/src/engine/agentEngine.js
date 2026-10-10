@@ -558,6 +558,8 @@ function pickApiKey(agent) {
   if (fromRegistry) return fromRegistry;
   if (agent.ai_provider === 'anthropic') return process.env.ANTHROPIC_API_KEY || '';
   if (agent.ai_provider === 'openai')    return process.env.OPENAI_API_KEY || '';
+  if (agent.ai_provider === 'gemini')    return process.env.GEMINI_API_KEY || 'vertex-oauth';
+  if (agent.ai_provider === 'vertex')    return 'vertex-oauth';
   return '';
 }
 
@@ -715,11 +717,11 @@ async function recordStep(runId, stepIndex, step) {
     [
       runId,
       stepIndex,
-      step.step_type,
+      step.step_type || step.type || 'llm_call',
       step.tool_type || null,
       step.input ? JSON.stringify(step.input) : null,
       step.output != null ? JSON.stringify(step.output) : null,
-      step.status,
+      step.status || 'completed',
       step.latency_ms || null,
       step.error_message ? String(step.error_message).slice(0, 1000) : null,
     ],

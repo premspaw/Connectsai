@@ -17,6 +17,7 @@ RUN cd backend && npm install --omit=dev
 COPY backend ./backend
 COPY supabase/migrations ./supabase/migrations
 COPY forge-growth-plugin ./forge-growth-plugin
+COPY gcp-service-account.json* ./
 
 # 3. Production runner stage
 FROM node:20-alpine
@@ -27,6 +28,7 @@ COPY --from=builder /app/backend ./backend
 COPY --from=builder /app/frontend/dist ./frontend/dist
 COPY --from=builder /app/supabase/migrations ./supabase/migrations
 COPY --from=builder /app/forge-growth-plugin ./forge-growth-plugin
+COPY --from=builder /app/gcp-service-account.json* ./
 
 ENV NODE_ENV=production
 EXPOSE 3010
