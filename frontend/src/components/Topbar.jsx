@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Bell, LogOut, ChevronDown, User, Settings, AlertTriangle, Sun, Moon, Monitor, Plus, Check, Building2, Globe } from 'lucide-react';
+import { Bell, LogOut, ChevronDown, User, Settings, AlertTriangle, Sun, Moon, Monitor, Plus, Check, Building2, Globe, ExternalLink } from 'lucide-react';
 import { C, FONT } from '../constants.js';
 import { api } from '../api.js';
 import { useTheme } from '../theme.jsx';
@@ -54,14 +54,24 @@ export default function Topbar({ user, onUserChange, onLogout, onNavigate, secti
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  const handleSwitchAccount = async (accId) => {
+  const handleSwitchAccount = async (accId, e) => {
+    if (e) e.stopPropagation();
     setSubOpen(false);
+    const target = subaccounts.find(a => a.id === accId);
+    
+    // If the subaccount has a dedicated custom subdomain (e.g. dermasculpt.connectsai.in)
+    // and we're currently on a different domain, open the client portal
+    if (target?.domain && window.location.hostname !== target.domain && !window.location.hostname.includes('localhost')) {
+      window.open(`https://${target.domain}`, '_blank');
+      return;
+    }
+
     try {
       const res = await api.subaccounts.switch(accId);
       if (res?.user && onUserChange) {
         onUserChange(res.user);
       }
-      setActiveAccount(res?.activeAccount || subaccounts.find(a => a.id === accId));
+      setActiveAccount(res?.activeAccount || target);
     } catch (err) {
       console.error('Account switch failed:', err);
     }
@@ -273,10 +283,11 @@ export default function Topbar({ user, onUserChange, onLogout, onNavigate, secti
 
             {subaccounts.map(acc => {
               const isSelected = (activeAccount?.id || 'ACCT-001') === acc.id;
+              const isExternal = acc.domain && window.location.hostname !== acc.domain && !window.location.hostname.includes('localhost');
               return (
                 <button
                   key={acc.id}
-                  onClick={() => handleSwitchAccount(acc.id)}
+                  onClick={(e) => handleSwitchAccount(acc.id, e)}
                   style={{
                     width: '100%',
                     padding: '8px 10px',
@@ -303,12 +314,29 @@ export default function Topbar({ user, onUserChange, onLogout, onNavigate, secti
                       <div style={{ fontSize: 11, color: C.textMuted }}>
                         {acc.id} • {acc.displayPhoneNumber}
                       </div>
-                      <div style={{ fontSize: 10, color: '#0ea5e9' }}>
-                        {acc.domain}
+                      <div style={{ fontSize: 10, color: '#0ea5e9', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span>{acc.domain}</span>
+                        {isExternal && <ExternalLink size={10} />}
                       </div>
                     </div>
                   </div>
-                  {isSelected && <Check size={16} color="#6366f1" />}
+                  {isSelected ? (
+                    <Check size={16} color="#6366f1" />
+                  ) : isExternal ? (
+                    <span style={{
+                      fontSize: 10,
+                      fontWeight: 600,
+                      color: '#0ea5e9',
+                      background: 'rgba(14, 165, 233, 0.1)',
+                      padding: '2px 6px',
+                      borderRadius: 4,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 3,
+                    }}>
+                      Portal ↗
+                    </span>
+                  ) : null}
                 </button>
               );
             })}
