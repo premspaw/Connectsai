@@ -9,9 +9,12 @@ let tokenExpiresAt = 0;
 function loadServiceAccount() {
   const candidates = [
     process.env.GOOGLE_APPLICATION_CREDENTIALS,
+    '/app/gcp-service-account.json',
     path.resolve(process.cwd(), 'gcp-service-account.json'),
+    path.resolve(process.cwd(), '../gcp-service-account.json'),
     path.resolve(__dirname, '../../../gcp-service-account.json'),
     path.resolve(__dirname, '../../gcp-service-account.json'),
+    path.resolve(__dirname, '../gcp-service-account.json'),
   ].filter(Boolean);
 
   for (const p of candidates) {

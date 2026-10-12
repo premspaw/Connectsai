@@ -709,7 +709,8 @@ async function loadInboundImageBase64({ inboundMessageId }) {
   }
 }
 
-async function recordStep(runId, stepIndex, step) {
+async function recordStep(runId, stepIndex, step = {}) {
+  const s = step || {};
   await pool.query(
     `INSERT INTO coexistence.agent_run_steps
        (run_id, step_index, step_type, tool_type, input, output, status, latency_ms, error_message)
@@ -717,13 +718,13 @@ async function recordStep(runId, stepIndex, step) {
     [
       runId,
       stepIndex,
-      step.step_type || step.type || 'llm_call',
-      step.tool_type || null,
-      step.input ? JSON.stringify(step.input) : null,
-      step.output != null ? JSON.stringify(step.output) : null,
-      step.status || 'completed',
-      step.latency_ms || null,
-      step.error_message ? String(step.error_message).slice(0, 1000) : null,
+      s.step_type || s.type || 'llm_call',
+      s.tool_type || null,
+      s.input ? JSON.stringify(s.input) : null,
+      s.output != null ? JSON.stringify(s.output) : null,
+      s.status || 'completed',
+      s.latency_ms || null,
+      s.error_message ? String(s.error_message).slice(0, 1000) : null,
     ],
   );
 }
